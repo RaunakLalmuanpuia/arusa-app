@@ -5,9 +5,12 @@ use App\Enums\PaymentStatus;
 use App\Mail\OrderPlaced;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\Razorpay;
+use App\Services\RazorpayException;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     Mail::fake();
@@ -103,4 +106,56 @@ test('a capture for an attempt first reported as failed still pays the order', f
         ->and($this->payment->fresh()->status)->toBe(PaymentStatus::Paid)
         ->and($this->payment->fresh()->gateway_payment_id)->toBe('pay_LATE1')
         ->and($this->order->payments()->count())->toBe(1);
+});
+
+test('a second captured payment on a paid order is recorded and refunded once', function () {
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_A', $this->order->total))->assertNoContent();
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->with('pay_B', $this->order->total)
+        ->andReturn(['id' => 'rfnd_B', 'status' => 'processed']));
+
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_B', $this->order->total))->assertNoContent();
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_B', $this->order->total))->assertNoContent();
+
+    expect($this->order->fresh()->payment_status)->toBe(PaymentStatus::Paid)
+        ->and($this->order->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Confirmed)
+        ->and($this->payment->fresh()->status)->toBe(PaymentStatus::Paid)
+        ->and($this->payment->fresh()->gateway_payment_id)->toBe('pay_A')
+        ->and(Payment::where('gateway_payment_id', 'pay_B')->sole()->status)->toBe(PaymentStatus::Refunded);
+    Mail::assertQueued(OrderPlaced::class, 1);
+});
+
+test('a duplicate capture reported as failed first is upgraded and refunded', function () {
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->with('pay_B', $this->order->total)
+        ->andReturn(['id' => 'rfnd_B', 'status' => 'processed']));
+
+    postRazorpayWebhook(razorpayEvent('payment.failed', 'pay_B', $this->order->total))->assertNoContent();
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_A', $this->order->total))->assertNoContent();
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_B', $this->order->total))->assertNoContent();
+
+    expect(Payment::where('gateway_payment_id', 'pay_B')->sole()->status)->toBe(PaymentStatus::Refunded)
+        ->and($this->order->fresh()->payment_status)->toBe(PaymentStatus::Paid);
+});
+
+test('a failed refund of a duplicate capture is retried on redelivery', function () {
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_A', $this->order->total))->assertNoContent();
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->andThrow(new RazorpayException('Refund failed')));
+
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_B', $this->order->total))->assertRedirect();
+
+    expect(Payment::where('gateway_payment_id', 'pay_B')->sole()->status)->toBe(PaymentStatus::Paid);
+
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->with('pay_B', $this->order->total)
+        ->andReturn(['id' => 'rfnd_B', 'status' => 'processed']));
+
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_B', $this->order->total))->assertNoContent();
+
+    expect(Payment::where('gateway_payment_id', 'pay_B')->sole()->status)->toBe(PaymentStatus::Refunded);
 });

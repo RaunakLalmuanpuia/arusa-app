@@ -100,3 +100,21 @@ test('an order without a captured payment cannot be refunded', function () {
 
     expect(fn () => app(RefundPayment::class)->handle($this->order))->toThrow(ValidationException::class);
 });
+
+test('a full refund after a duplicate payment was refunded still refunds the real payment', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Paid]);
+    $this->payment->update(['gateway_payment_id' => 'pay_A', 'status' => PaymentStatus::Paid]);
+    $duplicate = Payment::factory()->for($this->order)->create([
+        'gateway_payment_id' => 'pay_B', 'amount' => $this->order->total, 'status' => PaymentStatus::Refunded,
+    ]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->with('pay_A', $this->order->total)
+        ->andReturn(['id' => 'rfnd_A', 'status' => 'processed']));
+
+    app(RefundPayment::class)->handle($this->order);
+
+    expect($this->payment->fresh()->status)->toBe(PaymentStatus::Refunded)
+        ->and($duplicate->fresh()->payload)->not->toHaveKey('refund')
+        ->and($this->order->fresh()->payment_status)->toBe(PaymentStatus::Refunded);
+});
