@@ -60,6 +60,16 @@ class Order extends Model
     }
 
     /**
+     * Payment attempts, oldest first. The first row is the one created when the order was placed.
+     *
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->orderBy('id');
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo

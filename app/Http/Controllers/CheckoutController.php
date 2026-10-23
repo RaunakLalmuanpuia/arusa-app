@@ -7,6 +7,7 @@ use App\Http\Requests\CheckoutRequest;
 use App\Models\Address;
 use App\Models\ShippingZone;
 use App\Services\Cart;
+use App\Services\Razorpay;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -16,7 +17,7 @@ use Inertia\Response;
 
 class CheckoutController extends Controller
 {
-    public function create(Request $request, Cart $cart): Response|RedirectResponse
+    public function create(Request $request, Cart $cart, Razorpay $razorpay): Response|RedirectResponse
     {
         $summary = $cart->summary();
 
@@ -38,6 +39,7 @@ class CheckoutController extends Controller
                 'pincode' => $address->pincode ?? '',
             ],
             'districts' => Address::DISTRICTS,
+            'online_payment' => $razorpay->isConfigured(),
             'quote' => fn (): ?array => $this->quote((string) $request->query('pincode'), $summary['subtotal']),
         ]);
     }

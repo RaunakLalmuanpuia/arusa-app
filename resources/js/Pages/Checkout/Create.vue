@@ -9,6 +9,7 @@ const props = defineProps({
     prefill: { type: Object, required: true },
     districts: { type: Array, required: true },
     quote: { type: Object, default: null },
+    online_payment: { type: Boolean, required: true },
 });
 
 const page = usePage();
@@ -27,7 +28,27 @@ watch(
 
 const liveQuote = computed(() => (props.quote?.pincode === form.pincode ? props.quote : null));
 
-const canPlaceOrder = computed(() => liveQuote.value?.deliverable && liveQuote.value.cod_available && !form.processing);
+watch(liveQuote, (quote) => {
+    if (quote?.deliverable && !quote.cod_available && props.online_payment) {
+        form.payment_method = 'razorpay';
+    }
+});
+
+const methodAvailable = computed(() => (form.payment_method === 'cod' ? liveQuote.value?.cod_available : props.online_payment));
+
+const canPlaceOrder = computed(() => liveQuote.value?.deliverable && methodAvailable.value && !form.processing);
+
+const buttonLabel = computed(() => {
+    if (form.processing) {
+        return 'Placing order…';
+    }
+
+    if (!liveQuote.value?.deliverable) {
+        return 'Enter your pincode';
+    }
+
+    return `${form.payment_method === 'razorpay' ? 'Continue to payment' : 'Place order'} · ${formatPaise(liveQuote.value.total)}`;
+});
 
 const submit = () => form.post(route('checkout.store'));
 
@@ -105,8 +126,12 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         <input v-model="form.payment_method" type="radio" value="cod" class="text-ink focus:ring-ink" :disabled="liveQuote?.deliverable && !liveQuote.cod_available" />
                         <span>Cash on delivery</span>
                     </label>
+                    <label v-if="online_payment" class="flex min-h-11 items-center gap-3 border border-brand-300 px-4">
+                        <input v-model="form.payment_method" type="radio" value="razorpay" class="text-ink focus:ring-ink" />
+                        <span>Pay online <span class="text-brand-600">· UPI, cards, netbanking</span></span>
+                    </label>
                     <p v-if="liveQuote?.deliverable && !liveQuote.cod_available" class="text-sm text-red-700" role="status">
-                        Cash on delivery isn't available for this order. Online payment is coming soon.
+                        Cash on delivery isn't available for this order.<template v-if="online_payment"> Pay online instead.</template>
                     </p>
                     <InputError :message="form.errors.payment_method" />
                 </fieldset>
@@ -117,7 +142,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     :class="focusRing"
                     :disabled="!canPlaceOrder"
                 >
-                    {{ form.processing ? 'Placing order…' : liveQuote?.deliverable ? `Place order · ${formatPaise(liveQuote.total)}` : 'Enter your pincode' }}
+                    {{ buttonLabel }}
                 </button>
             </form>
 

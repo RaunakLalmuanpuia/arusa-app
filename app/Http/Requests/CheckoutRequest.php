@@ -28,7 +28,7 @@ class CheckoutRequest extends FormRequest
             'locality' => ['required', 'string', 'max:100'],
             'district' => ['required', Rule::in(Address::DISTRICTS)],
             'pincode' => ['required', 'digits:6'],
-            'payment_method' => ['required', Rule::enum(PaymentMethod::class)->only([PaymentMethod::Cod])],
+            'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
         ];
     }
 

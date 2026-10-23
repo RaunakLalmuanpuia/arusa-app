@@ -4,14 +4,19 @@ use App\Actions\PlaceOrder;
 use App\Enums\FulfilmentStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\ShippingZone;
 use App\Models\User;
+use App\Services\Razorpay;
+use App\Services\RazorpayException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     $this->tee = ProductVariant::factory()
@@ -132,10 +137,64 @@ test('the phone must be a 10-digit Indian mobile number', function (string $phon
         ->assertSessionHasErrors('phone');
 })->with(['12345', '5123456789', '+919876543210', '98765432101']);
 
-test('online payment is not offered yet', function () {
+test('an online payment order reserves the stock and waits for payment', function () {
+    Mail::fake();
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->with(103900, Mockery::pattern('/^ARU-\d{6}$/'))
+        ->andReturn(['id' => 'order_TEST1', 'amount' => 103900, 'status' => 'created']));
+
+    $response = $this->withSession(['cart' => [$this->tee->id => 1]])
+        ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']));
+
+    $order = Order::sole();
+    $response->assertRedirect($order->trackingUrl())->assertSessionMissing('cart');
+
+    expect($order->payment_status)->toBe(PaymentStatus::AwaitingPayment)
+        ->and($order->fulfilment_status)->toBe(FulfilmentStatus::Pending)
+        ->and($order->payments()->sole()->only('gateway_order_id', 'amount'))->toBe(['gateway_order_id' => 'order_TEST1', 'amount' => 103900])
+        ->and($order->payments()->sole()->status)->toBe(PaymentStatus::AwaitingPayment)
+        ->and($order->payments()->sole()->payload['order']['id'])->toBe('order_TEST1')
+        ->and($this->tee->fresh()->stock)->toBe(4);
+    Mail::assertNothingQueued();
+});
+
+test('a Razorpay failure rolls the whole order back', function () {
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->andThrow(new RazorpayException('Server error')));
+
+    $this->withSession(['cart' => [$this->tee->id => 2]])
+        ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']))
+        ->assertSessionHasErrors('payment_method')
+        ->assertSessionHas('cart');
+
+    expect(Order::count())->toBe(0)
+        ->and(Payment::count())->toBe(0)
+        ->and($this->tee->fresh()->stock)->toBe(5);
+});
+
+test('online payment is offered beyond the cash on delivery limit', function () {
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->andReturn(['id' => 'order_TEST1', 'amount' => 399600, 'status' => 'created']));
+
+    $this->withSession(['cart' => [$this->tee->id => 4]])
+        ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']))
+        ->assertSessionHasNoErrors();
+
+    expect(Order::sole()->total)->toBe(399600);
+});
+
+test('online payment is refused when Razorpay is not set up', function () {
+    config(['services.razorpay.key_id' => null]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldNotReceive('createOrder'));
+
     $this->withSession(['cart' => [$this->tee->id => 1]])
         ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']))
         ->assertSessionHasErrors('payment_method');
+
+    expect(Order::count())->toBe(0);
 });
 
 test('a signed-in shopper gets the order, a saved address and a phone on file', function () {

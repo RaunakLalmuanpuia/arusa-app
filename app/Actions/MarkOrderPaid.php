@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Actions;
+
+use App\Enums\FulfilmentStatus;
+use App\Enums\PaymentStatus;
+use App\Models\Order;
+use Illuminate\Support\Facades\DB;
+use UnexpectedValueException;
+
+class MarkOrderPaid
+{
+    public function __construct(
+        private SendOrderPlacedEmails $sendOrderPlacedEmails,
+        private RefundPayment $refundPayment,
+    ) {}
+
+    /**
+     * The one place an online order becomes paid. The browser handler and the webhook both call it,
+     * so it is idempotent. A payment that lands after the order was cancelled is refunded at once,
+     * and so is a second, different payment captured on an order that already has one (the order itself is untouched).
+     *
+     * @param  array<string, mixed>  $payload
+     *
+     * @throws UnexpectedValueException when the payment does not belong to this order or the amount differs
+     */
+    public function handle(Order $order, string $gatewayOrderId, string $paymentId, int $amount, array $payload = []): void
+    {
+        $duplicatePayment = null;
+
+        $outcome = DB::transaction(function () use ($order, $gatewayOrderId, $paymentId, $amount, $payload, &$duplicatePayment): string {
+            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $payment = $order->payments()->where('gateway_order_id', $gatewayOrderId)->oldest('id')->first();
+
+            if (! $payment || $payment->amount !== $amount) {
+                throw new UnexpectedValueException("Payment {$paymentId} does not match order {$order->number}.");
+            }
+
+            if (in_array($payment->status, [PaymentStatus::Paid, PaymentStatus::Refunded], true) && $payment->gateway_payment_id !== $paymentId) {
+                $duplicate = $order->payments()->where('gateway_payment_id', $paymentId)->first();
+
+                if ($duplicate?->status === PaymentStatus::Refunded) {
+                    return 'already recorded';
+                }
+
+                $duplicate ??= $order->payments()->make([
+                    'gateway' => 'razorpay',
+                    'gateway_order_id' => $gatewayOrderId,
+                    'gateway_payment_id' => $paymentId,
+                    'amount' => $amount,
+                ]);
+
+                $duplicate->fill([
+                    'status' => PaymentStatus::Paid,
+                    'payload' => [...($duplicate->payload ?? []), 'payment' => $payload],
+                ])->save();
+
+                $duplicatePayment = $duplicate;
+
+                return 'duplicate';
+            }
+
+            if ($payment->status === PaymentStatus::Refunded) {
+                return 'already recorded';
+            }
+
+            if ($payment->status === PaymentStatus::Paid) {
+                // A late payment whose refund failed last time: try the refund again.
+                return $order->fulfilment_status === FulfilmentStatus::Cancelled ? 'order cancelled' : 'already recorded';
+            }
+
+            // This attempt was reported as failed earlier and has now succeeded: drop the stale row.
+            $order->payments()->where('gateway_payment_id', $paymentId)->where('status', PaymentStatus::Failed)->whereKeyNot($payment->id)->delete();
+
+            $payment->update([
+                'gateway_payment_id' => $paymentId,
+                'status' => PaymentStatus::Paid,
+                'payload' => [...($payment->payload ?? []), 'payment' => $payload],
+            ]);
+
+            if ($order->fulfilment_status === FulfilmentStatus::Cancelled) {
+                return 'order cancelled';
+            }
+
+            $order->update(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Confirmed]);
+
+            return 'paid';
+        });
+
+        if ($outcome === 'paid') {
+            $this->sendOrderPlacedEmails->handle($order->fresh());
+        }
+
+        if ($outcome === 'order cancelled') {
+            $this->refundPayment->handle($order);
+        }
+
+        if ($outcome === 'duplicate') {
+            $this->refundPayment->handle($order, $duplicatePayment);
+        }
+    }
+}
