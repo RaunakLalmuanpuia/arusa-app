@@ -101,7 +101,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         </span>
                     </button>
                     <Link
-                        :href="page.props.auth.user ? route('dashboard') : route('login')"
+                        :href="page.props.auth.user ? route('account') : route('login')"
                         class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
                         :class="focusRing"
                         :aria-label="page.props.auth.user ? 'My account' : 'Log in'"
