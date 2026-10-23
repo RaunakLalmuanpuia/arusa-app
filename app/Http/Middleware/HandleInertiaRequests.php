@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -33,6 +35,12 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'store' => fn (): array => Arr::only(Setting::values(), [
+                'store_name', 'contact_phone', 'whatsapp_number', 'contact_email',
+            ]),
+            'flash' => [
+                'status' => fn (): ?string => $request->session()->get('status'),
             ],
         ];
     }
