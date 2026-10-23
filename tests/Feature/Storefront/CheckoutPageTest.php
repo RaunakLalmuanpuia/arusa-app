@@ -71,3 +71,13 @@ test('a signed-in shopper gets their last address filled in', function () {
             ->where('prefill.email', $user->email)
             ->has('districts', 11));
 });
+
+test('online payment is offered only when Razorpay is set up', function () {
+    $this->withSession($this->cart)->get('/checkout')
+        ->assertInertia(fn ($page) => $page->where('online_payment', true));
+
+    config(['services.razorpay.key_id' => null]);
+
+    $this->withSession($this->cart)->get('/checkout')
+        ->assertInertia(fn ($page) => $page->where('online_payment', false));
+});

@@ -5,23 +5,27 @@ namespace App\Actions;
 use App\Enums\FulfilmentStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
-use App\Mail\NewOrderReceived;
-use App\Mail\OrderPlaced;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ShippingZone;
 use App\Models\User;
+use App\Services\Razorpay;
+use App\Services\RazorpayException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class PlaceOrder
 {
+    public function __construct(
+        private Razorpay $razorpay,
+        private SendOrderPlacedEmails $sendOrderPlacedEmails,
+    ) {}
+
     /**
      * Create the order in one transaction: lock and re-check every variant, price from current data,
-     * snapshot the items and address, and decrement stock. Any failure rolls everything back.
+     * snapshot the items and address, decrement stock and, for online payment, create the Razorpay order. Any failure rolls everything back.
      *
      * @param  array{name: string, phone: string, email: ?string, line1: string, locality: string, district: string, pincode: string, payment_method: string}  $customer
      * @param  array<int, int>  $quantities  variant id => quantity
@@ -36,6 +40,10 @@ class PlaceOrder
             ?? throw ValidationException::withMessages(['pincode' => "We don't deliver to this pincode yet."]);
 
         $paymentMethod = PaymentMethod::from($customer['payment_method']);
+
+        if ($paymentMethod === PaymentMethod::Razorpay && ! $this->razorpay->isConfigured()) {
+            throw ValidationException::withMessages(['payment_method' => "Online payment isn't available right now."]);
+        }
 
         $order = DB::transaction(function () use ($user, $customer, $quantities, $zone, $paymentMethod): Order {
             $variants = ProductVariant::with('product')
@@ -85,8 +93,8 @@ class PlaceOrder
                 'shipping' => $shipping,
                 'total' => $total,
                 'payment_method' => $paymentMethod,
-                'payment_status' => PaymentStatus::Pending,
-                'fulfilment_status' => FulfilmentStatus::Confirmed,
+                'payment_status' => $paymentMethod === PaymentMethod::Cod ? PaymentStatus::Pending : PaymentStatus::AwaitingPayment,
+                'fulfilment_status' => $paymentMethod === PaymentMethod::Cod ? FulfilmentStatus::Confirmed : FulfilmentStatus::Pending,
                 'placed_at' => now(),
             ]);
 
@@ -105,6 +113,24 @@ class PlaceOrder
                 $variant->decrement('stock', $quantity);
             }
 
+            if ($paymentMethod === PaymentMethod::Razorpay) {
+                try {
+                    $gatewayOrder = $this->razorpay->createOrder($total, $order->number);
+                } catch (RazorpayException $exception) {
+                    report($exception);
+
+                    throw ValidationException::withMessages(['payment_method' => "We couldn't start the online payment. Please try again."]);
+                }
+
+                $order->payments()->create([
+                    'gateway' => 'razorpay',
+                    'gateway_order_id' => $gatewayOrder['id'],
+                    'amount' => $total,
+                    'status' => PaymentStatus::AwaitingPayment,
+                    'payload' => ['order' => $gatewayOrder],
+                ]);
+            }
+
             if ($user) {
                 $user->addresses()->firstOrCreate(Arr::only($customer, ['name', 'phone', 'line1', 'locality', 'district', 'pincode']));
 
@@ -116,16 +142,8 @@ class PlaceOrder
             return $order;
         });
 
-        $order->load('items');
-
-        if ($order->customer_email) {
-            Mail::to($order->customer_email)->queue(new OrderPlaced($order));
-        }
-
-        $adminEmails = User::where('is_admin', true)->pluck('email');
-
-        if ($adminEmails->isNotEmpty()) {
-            Mail::to($adminEmails)->queue(new NewOrderReceived($order));
+        if ($paymentMethod === PaymentMethod::Cod) {
+            $this->sendOrderPlacedEmails->handle($order);
         }
 
         return $order;

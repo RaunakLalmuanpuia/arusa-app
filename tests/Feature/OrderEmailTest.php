@@ -7,7 +7,9 @@ use App\Models\OrderItem;
 use App\Models\ProductVariant;
 use App\Models\ShippingZone;
 use App\Models\User;
+use App\Services\Razorpay;
 use Illuminate\Support\Facades\Mail;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     Mail::fake();
@@ -59,4 +61,18 @@ test('the receipt table renders one row per line and a bold total', function () 
 
         expect($html)->not->toContain('**')->toMatch('/<strong[^>]*>₹1,339<\/strong>/');
     }
+});
+
+test('an online order sends no email until it is paid', function () {
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->andReturn(['id' => 'order_TEST1', 'status' => 'created']));
+
+    test()->withSession(['cart' => [test()->variant->id => 1]])->post('/checkout', [
+        'name' => 'Mami', 'phone' => '9876543210', 'email' => 'mami@example.com',
+        'line1' => 'House 1', 'locality' => 'Chanmari', 'district' => 'Aizawl', 'pincode' => '796001',
+        'payment_method' => 'razorpay',
+    ])->assertSessionHasNoErrors();
+
+    Mail::assertNothingQueued();
 });
