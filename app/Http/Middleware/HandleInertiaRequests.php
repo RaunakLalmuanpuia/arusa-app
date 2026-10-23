@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Category;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -39,6 +40,12 @@ class HandleInertiaRequests extends Middleware
             'store' => fn (): array => Arr::only(Setting::values(), [
                 'store_name', 'contact_phone', 'whatsapp_number', 'contact_email',
             ]),
+            'categories' => fn (): array => Category::active()
+                ->whereNull('parent_id')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['name', 'slug'])
+                ->toArray(),
             'flash' => [
                 'status' => fn (): ?string => $request->session()->get('status'),
             ],

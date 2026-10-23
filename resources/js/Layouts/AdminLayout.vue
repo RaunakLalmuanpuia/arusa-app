@@ -9,6 +9,8 @@ const isSidebarOpen = ref(false);
 
 const links = [
     { label: 'Dashboard', route: 'admin.dashboard', match: 'admin.dashboard' },
+    { label: 'Categories', route: 'admin.categories.index', match: 'admin.categories.*' },
+    { label: 'Products', route: 'admin.products.index', match: 'admin.products.*' },
     { label: 'Pages', route: 'admin.pages.index', match: 'admin.pages.*' },
     { label: 'Settings', route: 'admin.settings.edit', match: 'admin.settings.*' },
 ];

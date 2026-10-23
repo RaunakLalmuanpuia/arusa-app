@@ -5,6 +5,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import IconMenu from '@/Components/Icons/IconMenu.vue';
 import IconClose from '@/Components/Icons/IconClose.vue';
 import IconUser from '@/Components/Icons/IconUser.vue';
+import IconSearch from '@/Components/Icons/IconSearch.vue';
 import IconChat from '@/Components/Icons/IconChat.vue';
 
 const page = usePage();
@@ -51,15 +52,15 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     </span>
                 </Link>
 
-                <nav aria-label="Information" class="hidden gap-8 md:flex">
+                <nav aria-label="Shop" class="hidden gap-8 md:flex">
                     <Link
-                        v-for="link in infoLinks"
-                        :key="link.slug"
-                        :href="route('pages.show', link.slug)"
+                        v-for="category in page.props.categories"
+                        :key="category.slug"
+                        :href="route('categories.show', category.slug)"
                         class="rounded py-2 text-xs font-medium uppercase tracking-[0.2em] text-brand-200 transition-colors duration-200 hover:text-brand-50"
                         :class="focusRing"
                     >
-                        {{ link.label }}
+                        {{ category.name }}
                     </Link>
                 </nav>
 
@@ -71,6 +72,14 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         :class="focusRing"
                     >
                         Admin
+                    </Link>
+                    <Link
+                        :href="route('search')"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
+                        :class="focusRing"
+                        aria-label="Search"
+                    >
+                        <IconSearch class="h-6 w-6" />
                     </Link>
                     <Link
                         :href="page.props.auth.user ? route('dashboard') : route('login')"
@@ -92,9 +101,20 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                 <nav
                     v-if="isMenuOpen"
                     id="mobile-menu"
-                    aria-label="Information"
+                    aria-label="Menu"
                     class="absolute inset-x-0 top-full border-t border-brand-800 bg-brand-900 px-4 pb-4 md:hidden"
                 >
+                    <Link
+                        v-for="category in page.props.categories"
+                        :key="category.slug"
+                        :href="route('categories.show', category.slug)"
+                        class="flex min-h-11 items-center border-b border-brand-800 text-sm font-medium uppercase tracking-[0.2em]"
+                        :class="focusRing"
+                        @click="isMenuOpen = false"
+                    >
+                        {{ category.name }}
+                    </Link>
+                    <div v-if="page.props.categories.length" class="border-b border-brand-700" aria-hidden="true" />
                     <Link
                         v-for="link in infoLinks"
                         :key="link.slug"
