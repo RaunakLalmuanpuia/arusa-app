@@ -88,7 +88,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         type="button"
                         class="relative inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
                         :class="focusRing"
-                        :aria-label="`Bag, ${page.props.cart.count} items`"
+                        :aria-label="`Bag, ${page.props.cart.count} ${page.props.cart.count === 1 ? 'item' : 'items'}`"
                         @click="isCartOpen = true"
                     >
                         <IconBag class="h-6 w-6" />
