@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Razorpay;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -12,7 +16,7 @@ class OrderController extends Controller
     /**
      * Order status page. The route is signed, so the link itself is the permission.
      */
-    public function show(Order $order): Response
+    public function show(Order $order, Razorpay $razorpay): Response
     {
         $order->load('items');
 
@@ -39,6 +43,18 @@ class OrderController extends Controller
                 ]),
             ],
             'just_placed' => (bool) session('order_placed'),
+            'pays_on_delivery' => $order->payment_method === PaymentMethod::Cod,
+            'payment' => $order->payment_method === PaymentMethod::Razorpay && $order->payment_status === PaymentStatus::AwaitingPayment
+                ? [
+                    'key' => $razorpay->keyId(),
+                    'gateway_order_id' => $order->payments()->oldest('id')->value('gateway_order_id'),
+                    'amount' => $order->total,
+                    'verify_url' => URL::signedRoute('orders.payment.store', $order),
+                    'prefill' => ['name' => $order->customer_name, 'contact' => $order->customer_phone, 'email' => (string) $order->customer_email],
+                ]
+                : null,
+            'payment_confirmed' => (bool) session('payment_confirmed'),
+            'payment_error' => session('payment_error'),
         ]);
     }
 }

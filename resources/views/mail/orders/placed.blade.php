@@ -1,7 +1,7 @@
 <x-mail::message>
 # Thank you, {{ $order->customer_name }}
 
-Your order **{{ $order->number }}** is confirmed. You pay cash on delivery, and we'll call {{ $order->customer_phone }} before we deliver.
+Your order **{{ $order->number }}** is confirmed. {{ $order->payment_method === \App\Enums\PaymentMethod::Cod ? 'You pay cash on delivery' : 'Your online payment is received' }}, and we'll call {{ $order->customer_phone }} before we deliver.
 
 <x-mail::table>
 | Item | Qty | Price |
