@@ -7,6 +7,9 @@ import IconClose from '@/Components/Icons/IconClose.vue';
 import IconUser from '@/Components/Icons/IconUser.vue';
 import IconSearch from '@/Components/Icons/IconSearch.vue';
 import IconChat from '@/Components/Icons/IconChat.vue';
+import IconBag from '@/Components/Icons/IconBag.vue';
+import CartDrawer from '@/Components/Store/CartDrawer.vue';
+import { isCartOpen } from '@/cartDrawer';
 
 const page = usePage();
 const isMenuOpen = ref(false);
@@ -81,6 +84,22 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     >
                         <IconSearch class="h-6 w-6" />
                     </Link>
+                    <button
+                        type="button"
+                        class="relative inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
+                        :class="focusRing"
+                        :aria-label="`Bag, ${page.props.cart.count} items`"
+                        @click="isCartOpen = true"
+                    >
+                        <IconBag class="h-6 w-6" />
+                        <span
+                            v-if="page.props.cart.count"
+                            class="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-50 px-1 text-[10px] font-semibold text-ink"
+                            aria-hidden="true"
+                        >
+                            {{ page.props.cart.count }}
+                        </span>
+                    </button>
                     <Link
                         :href="page.props.auth.user ? route('dashboard') : route('login')"
                         class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
@@ -185,5 +204,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                 </nav>
             </div>
         </footer>
+
+        <CartDrawer />
     </div>
 </template>

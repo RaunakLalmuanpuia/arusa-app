@@ -1,8 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import StoreLayout from '@/Layouts/StoreLayout.vue';
 import { formatPaise } from '@/money';
+import { isCartOpen } from '@/cartDrawer';
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -45,6 +46,19 @@ const selectColour = (colour) => {
     if (selectedSize.value && !isSizeAvailable(selectedSize.value)) {
         selectedSize.value = undefined;
     }
+};
+
+const isAdding = ref(false);
+
+const colourSoldOut = computed(() => !props.variants.some((v) => v.colour === selectedColour.value && v.in_stock));
+
+const addToCart = () => {
+    router.post(route('cart.store'), { variant_id: selectedVariant.value.id, quantity: 1 }, {
+        preserveScroll: true,
+        onStart: () => { isAdding.value = true; },
+        onFinish: () => { isAdding.value = false; },
+        onSuccess: () => { isCartOpen.value = true; },
+    });
 };
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700';
@@ -153,8 +167,19 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
 
                 <p class="mt-6 min-h-5 text-sm text-brand-700" role="status">
                     <template v-if="selectedVariant">{{ selectedVariant.in_stock ? 'In stock' : 'Sold out' }}</template>
+                    <template v-else-if="colourSoldOut">Sold out</template>
                     <template v-else-if="sizes.length">Choose a size</template>
                 </p>
+                <p v-if="$page.props.errors.variant_id" class="mt-2 text-sm text-red-700" role="alert">{{ $page.props.errors.variant_id }}</p>
+                <button
+                    type="button"
+                    class="mt-4 flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 transition-opacity duration-150 disabled:opacity-40 motion-reduce:transition-none sm:w-auto sm:px-12"
+                    :class="focusRing"
+                    :disabled="!selectedVariant?.in_stock || isAdding"
+                    @click="addToCart"
+                >
+                    {{ isAdding ? 'Adding…' : colourSoldOut ? 'Sold out' : selectedVariant ? 'Add to bag' : 'Choose a size' }}
+                </button>
 
                 <p v-if="product.description" class="mt-8 whitespace-pre-line leading-relaxed text-brand-700">{{ product.description }}</p>
             </div>
