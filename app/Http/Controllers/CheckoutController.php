@@ -51,7 +51,7 @@ class CheckoutController extends Controller
     /**
      * Shipping and payment options for a pincode, using the same rules PlaceOrder enforces.
      *
-     * @return array{deliverable: bool, zone?: string, shipping?: int, total?: int, cod_available?: bool}|null
+     * @return array{pincode: string, deliverable: bool, zone?: string, shipping?: int, total?: int, cod_available?: bool}|null
      */
     private function quote(string $pincode, int $subtotal): ?array
     {
@@ -62,12 +62,13 @@ class CheckoutController extends Controller
         $zone = ShippingZone::forPincode($pincode);
 
         if (! $zone) {
-            return ['deliverable' => false];
+            return ['pincode' => $pincode, 'deliverable' => false];
         }
 
         $shipping = $zone->shippingFor($subtotal);
 
         return [
+            'pincode' => $pincode,
             'deliverable' => true,
             'zone' => $zone->name,
             'shipping' => $shipping,

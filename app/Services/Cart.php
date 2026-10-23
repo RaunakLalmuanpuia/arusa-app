@@ -33,7 +33,15 @@ class Cart
             return $user->cartItems()->pluck('quantity', 'product_variant_id')->map(fn ($quantity): int => (int) $quantity)->all();
         }
 
-        return $this->request->session()->get(self::SESSION_KEY, []);
+        $session = $this->request->session();
+        $stored = $session->get(self::SESSION_KEY, []);
+        $existing = $stored === [] ? [] : array_intersect_key($stored, ProductVariant::whereKey(array_keys($stored))->pluck('id', 'id')->all());
+
+        if (count($existing) !== count($stored)) {
+            $session->put(self::SESSION_KEY, $existing);
+        }
+
+        return $existing;
     }
 
     public function add(ProductVariant $variant, int $quantity): void

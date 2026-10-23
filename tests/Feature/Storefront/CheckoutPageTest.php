@@ -30,6 +30,7 @@ test('the quote prices shipping and cash on delivery for a known pincode', funct
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('Checkout/Create')
+            ->where('quote.pincode', '796001')
             ->where('quote.deliverable', true)
             ->where('quote.zone', 'Aizawl')
             ->where('quote.shipping', 4000)

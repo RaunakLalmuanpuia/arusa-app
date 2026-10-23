@@ -3634,7 +3634,7 @@ Expected: whole suite PASS.
   Stock drops by the ordered quantity.
 - Logging in keeps the guest bag. A signed-in shopper's address and phone are reused at the next checkout, and `/account` lists their orders.
 - An unknown pincode, a COD total over the zone limit, the COD switch turned off, and a stock shortage are all refused with a clear message, and nothing is written.
-- `php artisan queue:work --once` delivers the receipt (when an email was given) and the admin alert. Prices show as `₹1,299`.
+- `php artisan queue:work --stop-when-empty` delivers the receipt (when an email was given) and the admin alert. Prices show as `₹1,299`.
 - Admin can manage shipping zones and pincodes. Deleting a product or zone that has orders is refused with an explanation.
 
 ## Known follow-ups (not Phase 3)

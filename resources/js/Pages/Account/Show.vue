@@ -31,6 +31,8 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                 </div>
             </div>
 
+            <p v-if="$page.props.flash?.status" class="mt-6 text-sm text-brand-700" role="status">{{ $page.props.flash.status }}</p>
+
             <section class="mt-10" aria-labelledby="orders-title">
                 <h2 id="orders-title" class="text-xs font-medium uppercase tracking-[0.2em]">Orders</h2>
                 <ul v-if="orders.length" class="mt-4 divide-y divide-brand-200 border-y border-brand-200">

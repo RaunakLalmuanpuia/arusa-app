@@ -25,7 +25,9 @@ watch(
     { immediate: true },
 );
 
-const canPlaceOrder = computed(() => props.quote?.deliverable && props.quote.cod_available && !form.processing);
+const liveQuote = computed(() => (props.quote?.pincode === form.pincode ? props.quote : null));
+
+const canPlaceOrder = computed(() => liveQuote.value?.deliverable && liveQuote.value.cod_available && !form.processing);
 
 const submit = () => form.post(route('checkout.store'));
 
@@ -91,19 +93,19 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                             <label for="pincode" :class="label">Pincode</label>
                             <input id="pincode" v-model="form.pincode" inputmode="numeric" autocomplete="postal-code" maxlength="6" required :class="field" />
                             <InputError class="mt-1" :message="form.errors.pincode" />
-                            <p v-if="quote && !quote.deliverable" class="mt-1 text-sm text-red-700" role="status">We don't deliver here yet.</p>
-                            <p v-else-if="quote?.deliverable" class="mt-1 text-sm text-brand-700" role="status">Delivering to {{ quote.zone }}.</p>
+                            <p v-if="liveQuote && !liveQuote.deliverable" class="mt-1 text-sm text-red-700" role="status">We don't deliver here yet.</p>
+                            <p v-else-if="liveQuote?.deliverable" class="mt-1 text-sm text-brand-700" role="status">Delivering to {{ liveQuote.zone }}.</p>
                         </div>
                     </div>
                 </fieldset>
 
                 <fieldset class="space-y-3">
                     <legend class="font-display text-xl font-semibold">Payment</legend>
-                    <label class="flex min-h-11 items-center gap-3 border border-brand-300 px-4" :class="{ 'opacity-50': quote?.deliverable && !quote.cod_available }">
-                        <input v-model="form.payment_method" type="radio" value="cod" class="text-ink focus:ring-ink" :disabled="quote?.deliverable && !quote.cod_available" />
+                    <label class="flex min-h-11 items-center gap-3 border border-brand-300 px-4" :class="{ 'opacity-50': liveQuote?.deliverable && !liveQuote.cod_available }">
+                        <input v-model="form.payment_method" type="radio" value="cod" class="text-ink focus:ring-ink" :disabled="liveQuote?.deliverable && !liveQuote.cod_available" />
                         <span>Cash on delivery</span>
                     </label>
-                    <p v-if="quote?.deliverable && !quote.cod_available" class="text-sm text-red-700" role="status">
+                    <p v-if="liveQuote?.deliverable && !liveQuote.cod_available" class="text-sm text-red-700" role="status">
                         Cash on delivery isn't available for this order. Online payment is coming soon.
                     </p>
                     <InputError :message="form.errors.payment_method" />
@@ -115,7 +117,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     :class="focusRing"
                     :disabled="!canPlaceOrder"
                 >
-                    {{ form.processing ? 'Placing order…' : quote?.deliverable ? `Place order · ${formatPaise(quote.total)}` : 'Enter your pincode' }}
+                    {{ form.processing ? 'Placing order…' : liveQuote?.deliverable ? `Place order · ${formatPaise(liveQuote.total)}` : 'Enter your pincode' }}
                 </button>
             </form>
 
@@ -131,11 +133,11 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     <div class="flex justify-between"><dt>Subtotal</dt><dd class="tabular-nums">{{ formatPaise(page.props.cart.subtotal) }}</dd></div>
                     <div class="flex justify-between">
                         <dt>Shipping</dt>
-                        <dd class="tabular-nums">{{ quote?.deliverable ? (quote.shipping ? formatPaise(quote.shipping) : 'Free') : '—' }}</dd>
+                        <dd class="tabular-nums">{{ liveQuote?.deliverable ? (liveQuote.shipping ? formatPaise(liveQuote.shipping) : 'Free') : '—' }}</dd>
                     </div>
                     <div class="flex justify-between text-base font-medium">
                         <dt>Total</dt>
-                        <dd class="tabular-nums">{{ formatPaise(quote?.deliverable ? quote.total : page.props.cart.subtotal) }}</dd>
+                        <dd class="tabular-nums">{{ formatPaise(liveQuote?.deliverable ? liveQuote.total : page.props.cart.subtotal) }}</dd>
                     </div>
                 </dl>
             </aside>

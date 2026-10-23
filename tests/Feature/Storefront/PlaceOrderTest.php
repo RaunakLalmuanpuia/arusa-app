@@ -41,6 +41,14 @@ test('a guest places a cash on delivery order', function () {
         ->and($this->tee->fresh()->stock)->toBe(3);
 });
 
+test('a deleted variant in a guest bag is dropped and the rest still checks out', function () {
+    $this->withSession(['cart' => [$this->tee->id => 1, 999999 => 2]])
+        ->post('/checkout', checkoutPayload())
+        ->assertSessionHasNoErrors();
+
+    expect(Order::sole()->items)->toHaveCount(1);
+});
+
 test('shipping is charged below the free-above amount', function () {
     $this->withSession(['cart' => [$this->tee->id => 1]])->post('/checkout', checkoutPayload());
 
