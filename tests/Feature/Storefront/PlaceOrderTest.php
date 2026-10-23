@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\PlaceOrder;
 use App\Enums\FulfilmentStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
@@ -8,6 +9,7 @@ use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\ShippingZone;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     $this->tee = ProductVariant::factory()
@@ -55,16 +57,37 @@ test('shipping is charged below the free-above amount', function () {
     expect(Order::sole()->only('shipping', 'total'))->toBe(['shipping' => 4000, 'total' => 103900]);
 });
 
-test('a shortage rolls the whole order back', function () {
+test('a shortage found at order time rolls the whole order back', function () {
     $mug = ProductVariant::factory()->create(['stock' => 1]);
 
-    $this->withSession(['cart' => [$this->tee->id => 1, $mug->id => 3]])
-        ->post('/checkout', checkoutPayload())
-        ->assertSessionHasErrors('cart');
+    expect(fn () => app(PlaceOrder::class)->handle(null, checkoutPayload(), [$this->tee->id => 1, $mug->id => 3]))
+        ->toThrow(ValidationException::class);
 
     expect(Order::count())->toBe(0)
         ->and($this->tee->fresh()->stock)->toBe(5)
         ->and($mug->fresh()->stock)->toBe(1);
+});
+
+test('a bag quantity above stock is ordered at the capped quantity the shopper sees', function () {
+    $this->tee->update(['stock' => 2]);
+
+    $this->withSession(['cart' => [$this->tee->id => 3]])
+        ->post('/checkout', checkoutPayload())
+        ->assertSessionHasNoErrors();
+
+    expect(Order::sole()->total)->toBe(199800)
+        ->and(Order::sole()->items()->sole()->quantity)->toBe(2)
+        ->and($this->tee->fresh()->stock)->toBe(0);
+});
+
+test('a sold-out line in the bag is refused at checkout', function () {
+    $this->tee->update(['stock' => 0]);
+
+    $this->withSession(['cart' => [$this->tee->id => 1]])
+        ->post('/checkout', checkoutPayload())
+        ->assertSessionHasErrors('cart');
+
+    expect(Order::count())->toBe(0);
 });
 
 test('an item that was hidden after it was added cannot be ordered', function () {

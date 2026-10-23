@@ -42,7 +42,7 @@ class CheckoutController extends Controller
 
     public function store(CheckoutRequest $request, Cart $cart, PlaceOrder $placeOrder): RedirectResponse
     {
-        $order = $placeOrder->handle($request->user(), $request->validated(), $cart->quantities());
+        $order = $placeOrder->handle($request->user(), $request->validated(), $cart->lines()->pluck('quantity', 'variant_id')->all());
         $cart->clear();
 
         return redirect($order->trackingUrl())->with('order_placed', true);
