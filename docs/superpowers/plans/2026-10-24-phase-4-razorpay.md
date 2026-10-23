@@ -5,19 +5,19 @@
 **Goal:** Shoppers can pay online with Razorpay (UPI, cards, netbanking). Payments are confirmed by signature and by webhook. Orders left unpaid for 30 minutes are cancelled and their stock comes back. Paid orders can be refunded through the API.
 
 **Architecture:**
-- `App\Services\Razorpay` is a thin wrapper over Laravel's `Http` client. It creates orders, issues refunds and checks signatures; there is no SDK.
+- `App\Services\Razorpay` is a thin wrapper over the official `razorpay/razorpay` PHP SDK. It creates orders, issues refunds and checks signatures, and turns SDK errors into one `RazorpayException`. The rest of the app only talks to this wrapper, never to the SDK.
 - `PlaceOrder` gains a Razorpay branch. Inside the same transaction it reserves stock, creates the Razorpay order and stores a `payments` row. Any API failure rolls everything back.
 - The pay step lives on the signed order page. It loads Razorpay Checkout on demand, and the success handler posts the signature back to a signed endpoint.
 - `MarkOrderPaid` is the single place an order becomes paid. Both the browser handler and the `/webhooks/razorpay` endpoint call it. It is idempotent, and it refunds automatically if the payment lands after the order was cancelled.
 - A scheduled `orders:cancel-abandoned` command uses `CancelOrder` to sweep unpaid orders. `RefundPayment` reverses captured payments; Phase 5's admin cancel button will reuse both.
 
-**Tech Stack:** Laravel 13.38, PHP 8.4, Inertia v2 + Vue 3, Tailwind 3, Pest on PostgreSQL (`arusa_app_testing`). Razorpay REST API v1 is called with `Http`. Razorpay Checkout (`https://checkout.razorpay.com/v1/checkout.js`) is loaded at runtime, not from npm.
+**Tech Stack:** Laravel 13.38, PHP 8.4, Inertia v2 + Vue 3, Tailwind 3, Pest on PostgreSQL (`arusa_app_testing`). `razorpay/razorpay` ^2.9 (the official PHP SDK, owner-approved 2026-10-24). Razorpay Checkout (`https://checkout.razorpay.com/v1/checkout.js`) is loaded at runtime, not from npm.
 
 **Spec:** `docs/superpowers/specs/2026-10-23-arusa-ecommerce-design.md`, sections 2, 3 (`payments`), 4.4–4.7 and 9.
 
 ## Global Constraints
 
-- No new PHP/JS dependencies without approval. **No Razorpay SDK:** call the API with Laravel's `Http` client. Load Checkout from `https://checkout.razorpay.com/v1/checkout.js` at runtime, never from npm.
+- No new PHP/JS dependencies without approval. The one approved addition is **`razorpay/razorpay` ^2.9** (owner decision 2026-10-24). Use it only inside `App\Services\Razorpay`. Load Checkout from `https://checkout.razorpay.com/v1/checkout.js` at runtime, never from npm.
 - All money is stored as **integer paise**. The Razorpay `amount` is paise too: send `$order->total` unchanged.
 - **Prices are always recomputed server-side.** The client never sends a price or a total.
 - Stock changes run in a DB transaction with `lockForUpdate()` on variant rows, locked in ascending `id` order. Lock an order row before its variants.
@@ -26,7 +26,9 @@
 - Razorpay API failure while placing an order rolls back the whole transaction.
 - Orders with payment status `AwaitingPayment` that are older than 30 minutes are cancelled every 5 minutes: payment → `Failed`, fulfilment → `Cancelled`, stock restored.
 - Keys come from `.env` only: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`. Read them through `config('services.razorpay.*')`.
-- Tests never reach Razorpay. Use `Http::fake()`; `tests/TestCase.php` calls `Http::preventStrayRequests()` (Task 1).
+- Tests never reach Razorpay. The SDK makes its own HTTP calls (through `rmccue/requests`), so `Http::fake()` cannot intercept them. Any test that would create an order or a refund must swap the wrapper:
+  - `$this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')->…)`
+  - Signature checks are pure HMAC and run for real against the test keys.
 - Emails are queued (`ShouldQueue`), never sent inline.
 - Design skills apply to **storefront pages only** (Task 7): ui-ux-pro-max is primary; design-motion-principles for motion; impeccable only for audit/polish.
 - Motion: CSS transitions or Vue `<Transition>` only, 150–300 ms, respecting `prefers-reduced-motion`. Mobile-first.
@@ -34,7 +36,7 @@
 - After PHP changes run `vendor/bin/pint --dirty --format agent`. Run the narrowest tests with `php artisan test --compact <path>`.
 - Tests that need a guest cart seed the session with `->withSession(['cart' => [$variantId => $quantity]])`.
 - Pest datasets: when a test takes a typed model param, use a single `fn () => Model::factory()->create()`. Never `fn () => fn () =>`.
-- Activate project skills while working: `arusa-commerce` (always), `laravel-best-practices` (PHP), `inertia-vue-development` (Vue pages), `tailwindcss-development` (styling), `testing-best-practices` (tests). Use the laravel-boost `search-docs` tool for `Http` client faking and scheduling syntax.
+- Activate project skills while working: `arusa-commerce` (always), `laravel-best-practices` (PHP), `inertia-vue-development` (Vue pages), `tailwindcss-development` (styling), `testing-best-practices` (tests). Use the laravel-boost `search-docs` tool for mocking (`partialMock`) and scheduling syntax.
 - Node: run `source ~/.nvm/nvm.sh && nvm use` before any npm command.
 
 ## Decisions made in this plan
@@ -50,15 +52,21 @@
 - **Refunds are built now as an action with tests (`RefundPayment`), but there is no admin button yet.** Admin order screens, cancel and refund buttons are Phase 5, which calls `CancelOrder` + `RefundPayment`.
 - **`CancelOrder` does not refund.** It restores stock and fails an unpaid payment. Refunding a paid order is a separate call, so a Razorpay outage never blocks a cancel.
 - **Online payment is offered only when Razorpay keys are configured** (`Razorpay::isConfigured()`). It is not limited by `cod_max` and has no store setting.
-- **The Razorpay API call happens inside the `PlaceOrder` transaction,** as the spec requires for rollback. It holds the variant locks for at most the 10-second HTTP timeout, which is acceptable at this shop's volume.
+- **Official SDK instead of the `Http` client.** This deviates from spec section 2, which allowed it "unless the plan justifies otherwise"; the owner chose the SDK on 2026-10-24.
+  - It is wrapped so only one class knows about it.
+  - Costs to accept:
+    - SDK requests can't be faked with `Http::fake()`, so tests mock the wrapper instead.
+    - The SDK's README lists PHP up to 8.1, and this app runs 8.4. It installs and works, but may emit deprecation notices, which are logged and not fatal.
+    - The SDK's HTTP timeout is fixed at 60 seconds.
+- **The Razorpay API call happens inside the `PlaceOrder` transaction,** as the spec requires for rollback. While Razorpay responds it holds the variant locks, for 60 seconds at worst given the SDK's timeout. That is acceptable at this shop's volume; normal responses take well under a second.
 - **Razorpay MCP (spec section 10) is deferred.** It needs its repo vetted first and is not needed to ship payments. It is listed under follow-ups.
 
 ## File Map
 
 | File | Responsibility |
 |---|---|
-| `config/services.php`, `.env.example`, `phpunit.xml`, `tests/TestCase.php` | Razorpay config, fake test keys, no stray HTTP |
-| `app/Services/Razorpay.php` | Create order, refund, signature checks |
+| `composer.json`, `composer.lock`, `config/services.php`, `.env.example`, `phpunit.xml` | SDK, Razorpay config, fake test keys |
+| `app/Services/Razorpay.php`, `app/Services/RazorpayException.php` | SDK wrapper: create order, refund, signature checks; one exception type |
 | `database/migrations/*_create_payments_table.php`, `app/Models/Payment.php`, `database/factories/PaymentFactory.php` | Payment attempts |
 | `app/Models/Order.php`, `database/factories/OrderFactory.php` | `payments()` relation, `razorpay()` state |
 | `app/Actions/PlaceOrder.php`, `app/Actions/SendOrderPlacedEmails.php` | Razorpay branch, shared email dispatch |
@@ -76,8 +84,8 @@
 ### Task 1: Razorpay client and the payments table
 
 **Files:**
-- Create: `app/Services/Razorpay.php`, `app/Models/Payment.php`, `database/migrations/*_create_payments_table.php`, `database/factories/PaymentFactory.php`
-- Modify: `config/services.php`, `.env.example`, `phpunit.xml`, `tests/TestCase.php`, `app/Models/Order.php`, `database/factories/OrderFactory.php`
+- Create: `app/Services/Razorpay.php`, `app/Services/RazorpayException.php`, `app/Models/Payment.php`, `database/migrations/*_create_payments_table.php`, `database/factories/PaymentFactory.php`
+- Modify: `composer.json`, `composer.lock`, `config/services.php`, `.env.example`, `phpunit.xml`, `app/Models/Order.php`, `database/factories/OrderFactory.php`
 - Test: `tests/Feature/RazorpayTest.php`
 
 **Interfaces:**
@@ -86,8 +94,8 @@
   - `Razorpay` methods:
     - `isConfigured(): bool`
     - `keyId(): string`
-    - `createOrder(int $amount, string $receipt): array`: returns the Razorpay order (`id`, `amount`, `status`, …) and throws `RequestException|ConnectionException`.
-    - `refund(string $paymentId, int $amount): array`: returns the Razorpay refund (`id`, `status`, …) and throws `RequestException|ConnectionException`.
+    - `createOrder(int $amount, string $receipt): array`: returns the Razorpay order as an array (`id`, `amount`, `status`, …) and throws `RazorpayException`.
+    - `refund(string $paymentId, int $amount): array`: returns the Razorpay refund as an array (`id`, `status`, …) and throws `RazorpayException`.
     - `isValidPaymentSignature(string $gatewayOrderId, string $paymentId, string $signature): bool`
     - `isValidWebhookSignature(string $body, string $signature): bool`
   - `Payment` model with fillable `order_id, gateway, gateway_order_id, gateway_payment_id, amount, status, payload`.
@@ -98,9 +106,15 @@
     - `OrderFactory::razorpay()`: method Razorpay, payment `AwaitingPayment`, fulfilment `Pending`.
     - `PaymentFactory` default: an awaiting payment, amount 104900, matching `OrderFactory`'s total.
     - `PaymentFactory::paid()`.
+  - `App\Services\RazorpayException` (extends `RuntimeException`): API errors and network failures from the SDK.
   - Test keys from `phpunit.xml`: `rzp_test_fake`, `test_secret`, `test_webhook_secret`.
 
-- [ ] **Step 1: Config, test keys and no stray HTTP**
+- [ ] **Step 1: Install the SDK, config and test keys**
+
+```bash
+composer require razorpay/razorpay:^2.9 --no-interaction
+```
+Expected: it installs `razorpay/razorpay` 2.9.x and `rmccue/requests` 2.x. Any other change to `composer.json` means something went wrong; stop and report it.
 
 `config/services.php`, add before the closing `];`:
 ```php
@@ -124,27 +138,7 @@ RAZORPAY_WEBHOOK_SECRET=
         <env name="RAZORPAY_KEY_SECRET" value="test_secret"/>
         <env name="RAZORPAY_WEBHOOK_SECRET" value="test_webhook_secret"/>
 ```
-
-`tests/TestCase.php`, the full file:
-```php
-<?php
-
-namespace Tests;
-
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Support\Facades\Http;
-
-abstract class TestCase extends BaseTestCase
-{
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withoutVite();
-        Http::preventStrayRequests();
-    }
-}
-```
+These fake keys also act as a safety net. A test that forgets to mock the wrapper gets an authentication error from Razorpay rather than touching your account.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -156,35 +150,6 @@ use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\Razorpay;
-use Illuminate\Http\Client\Request;
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
-
-test('creating a Razorpay order posts the amount in paise with basic auth', function () {
-    Http::fake(['api.razorpay.com/v1/orders' => Http::response(['id' => 'order_TEST1', 'amount' => 104900, 'status' => 'created'])]);
-
-    $gatewayOrder = app(Razorpay::class)->createOrder(104900, 'ARU-000001');
-
-    expect($gatewayOrder['id'])->toBe('order_TEST1');
-    Http::assertSent(fn (Request $request) => $request->url() === 'https://api.razorpay.com/v1/orders'
-        && $request->method() === 'POST'
-        && $request->data() === ['amount' => 104900, 'currency' => 'INR', 'receipt' => 'ARU-000001']
-        && $request->hasHeader('Authorization', 'Basic '.base64_encode('rzp_test_fake:test_secret')));
-});
-
-test('a Razorpay API error is thrown to the caller', function () {
-    Http::fake(['api.razorpay.com/*' => Http::response(['error' => ['description' => 'Bad request']], 400)]);
-
-    app(Razorpay::class)->createOrder(104900, 'ARU-000001');
-})->throws(RequestException::class);
-
-test('a refund posts the amount to the payment', function () {
-    Http::fake(['api.razorpay.com/v1/payments/pay_TEST1/refund' => Http::response(['id' => 'rfnd_TEST1', 'amount' => 104900, 'status' => 'processed'])]);
-
-    expect(app(Razorpay::class)->refund('pay_TEST1', 104900)['id'])->toBe('rfnd_TEST1');
-    Http::assertSent(fn (Request $request) => $request->url() === 'https://api.razorpay.com/v1/payments/pay_TEST1/refund'
-        && $request['amount'] === 104900);
-});
 
 test('payment signatures are checked against the key secret', function () {
     $razorpay = app(Razorpay::class);
@@ -224,6 +189,8 @@ test('an order keeps its payment attempts in order', function () {
         ->and($order->payments->last()->payload)->toBe(['payment' => ['id' => 'pay_TEST1']]);
 });
 ```
+
+`createOrder()` and `refund()` are not tested here, because they would need the network. Tasks 2–4 mock them. Task 7's browser run calls them for real in Razorpay test mode.
 
 - [ ] **Step 3: Run the test to verify it fails**
 
@@ -361,7 +328,21 @@ class PaymentFactory extends Factory
     }
 ```
 
-- [ ] **Step 5: The Razorpay client**
+- [ ] **Step 5: The SDK wrapper and its exception**
+
+`php artisan make:class Services/RazorpayException --no-interaction`, then replace the contents:
+```php
+<?php
+
+namespace App\Services;
+
+use RuntimeException;
+
+/**
+ * Any failure talking to Razorpay: an API error response or a network problem.
+ */
+class RazorpayException extends RuntimeException {}
+```
 
 `php artisan make:class Services/Razorpay --no-interaction`, then replace the contents:
 ```php
@@ -369,11 +350,14 @@ class PaymentFactory extends Factory
 
 namespace App\Services;
 
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
+use Razorpay\Api\Api;
+use Razorpay\Api\Errors\Error;
+use Razorpay\Api\Errors\SignatureVerificationError;
+use WpOrg\Requests\Exception as RequestsException;
 
+/**
+ * The only class that talks to the Razorpay SDK. Amounts are paise, as Razorpay expects.
+ */
 class Razorpay
 {
     public function isConfigured(): bool
@@ -387,33 +371,30 @@ class Razorpay
     }
 
     /**
-     * Create a Razorpay order for an amount in paise.
-     *
      * @return array<string, mixed>
      *
-     * @throws RequestException|ConnectionException
+     * @throws RazorpayException
      */
     public function createOrder(int $amount, string $receipt): array
     {
-        return $this->client()
-            ->post('orders', ['amount' => $amount, 'currency' => 'INR', 'receipt' => $receipt])
-            ->throw()
-            ->json();
+        return $this->call(fn (Api $api): array => $api->order
+            ->create(['amount' => $amount, 'currency' => 'INR', 'receipt' => $receipt])
+            ->toArray());
     }
 
     /**
-     * Refund a captured payment, amount in paise.
+     * Refund a captured payment.
      *
      * @return array<string, mixed>
      *
-     * @throws RequestException|ConnectionException
+     * @throws RazorpayException
      */
     public function refund(string $paymentId, int $amount): array
     {
-        return $this->client()
-            ->post("payments/{$paymentId}/refund", ['amount' => $amount])
-            ->throw()
-            ->json();
+        return $this->call(fn (Api $api): array => $api->payment
+            ->fetch($paymentId)
+            ->refund(['amount' => $amount])
+            ->toArray());
     }
 
     /**
@@ -421,9 +402,11 @@ class Razorpay
      */
     public function isValidPaymentSignature(string $gatewayOrderId, string $paymentId, string $signature): bool
     {
-        $expected = hash_hmac('sha256', "{$gatewayOrderId}|{$paymentId}", (string) config('services.razorpay.key_secret'));
-
-        return hash_equals($expected, $signature);
+        return $this->verifies(fn (Api $api) => $api->utility->verifyPaymentSignature([
+            'razorpay_order_id' => $gatewayOrderId,
+            'razorpay_payment_id' => $paymentId,
+            'razorpay_signature' => $signature,
+        ]));
     }
 
     /**
@@ -433,16 +416,46 @@ class Razorpay
     {
         $secret = (string) config('services.razorpay.webhook_secret');
 
-        return $secret !== '' && hash_equals(hash_hmac('sha256', $body, $secret), $signature);
+        return $secret !== '' && $this->verifies(fn (Api $api) => $api->utility->verifyWebhookSignature($body, $signature, $secret));
     }
 
-    private function client(): PendingRequest
+    /**
+     * @param  callable(Api): mixed  $check
+     */
+    private function verifies(callable $check): bool
     {
-        return Http::baseUrl('https://api.razorpay.com/v1')
-            ->withBasicAuth((string) config('services.razorpay.key_id'), (string) config('services.razorpay.key_secret'))
-            ->acceptJson()
-            ->asJson()
-            ->timeout(10);
+        try {
+            $check($this->api());
+
+            return true;
+        } catch (SignatureVerificationError) {
+            return false;
+        }
+    }
+
+    /**
+     * @template TResult
+     *
+     * @param  callable(Api): TResult  $request
+     * @return TResult
+     *
+     * @throws RazorpayException
+     */
+    private function call(callable $request): mixed
+    {
+        try {
+            return $request($this->api());
+        } catch (Error|RequestsException $exception) {
+            throw new RazorpayException($exception->getMessage(), previous: $exception);
+        }
+    }
+
+    /**
+     * The SDK keeps the key and secret in static properties, so build it fresh for every call.
+     */
+    private function api(): Api
+    {
+        return new Api((string) config('services.razorpay.key_id'), (string) config('services.razorpay.key_secret'));
     }
 }
 ```
@@ -450,16 +463,16 @@ class Razorpay
 - [ ] **Step 6: Run the tests to verify they pass**
 
 Run: `php artisan migrate --no-interaction && php artisan test --compact tests/Feature/RazorpayTest.php`
-Expected: 7 passed.
+Expected: 4 passed, with no deprecation notices in the output. If the SDK or `rmccue/requests` prints PHP 8.4 deprecation notices, report them as DONE_WITH_CONCERNS with the exact text, and do not silence them yourself.
 
-Then run the full suite once: `php artisan test --compact`. Expected: all green. `Http::preventStrayRequests()` must not break any existing test, because nothing calls out over HTTP yet.
+Then run the full suite once: `php artisan test --compact`. Expected: all green.
 
 - [ ] **Step 7: Pint and commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
-git add config/services.php .env.example phpunit.xml tests/TestCase.php app/Services/Razorpay.php app/Models/Payment.php app/Models/Order.php database/migrations/*_create_payments_table.php database/factories/PaymentFactory.php database/factories/OrderFactory.php tests/Feature/RazorpayTest.php
-git commit -m "feat: razorpay client and payments table"
+git add composer.json composer.lock config/services.php .env.example phpunit.xml app/Services/Razorpay.php app/Services/RazorpayException.php app/Models/Payment.php app/Models/Order.php database/migrations/*_create_payments_table.php database/factories/PaymentFactory.php database/factories/OrderFactory.php tests/Feature/RazorpayTest.php
+git commit -m "feat: razorpay sdk wrapper and payments table"
 ```
 
 ---
@@ -489,16 +502,20 @@ In `tests/Feature/Storefront/PlaceOrderTest.php`:
 1. Add these imports to the top block:
 ```php
 use App\Models\Payment;
-use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Http;
+use App\Services\Razorpay;
+use App\Services\RazorpayException;
 use Illuminate\Support\Facades\Mail;
+use Mockery\MockInterface;
 ```
 
 2. Replace the test `online payment is not offered yet` with:
 ```php
 test('an online payment order reserves the stock and waits for payment', function () {
     Mail::fake();
-    Http::fake(['api.razorpay.com/v1/orders' => Http::response(['id' => 'order_TEST1', 'amount' => 103900, 'status' => 'created'])]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->with(103900, Mockery::pattern('/^ARU-\d{6}$/'))
+        ->andReturn(['id' => 'order_TEST1', 'amount' => 103900, 'status' => 'created']));
 
     $response = $this->withSession(['cart' => [$this->tee->id => 1]])
         ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']));
@@ -512,14 +529,13 @@ test('an online payment order reserves the stock and waits for payment', functio
         ->and($order->payments()->sole()->status)->toBe(PaymentStatus::AwaitingPayment)
         ->and($order->payments()->sole()->payload['order']['id'])->toBe('order_TEST1')
         ->and($this->tee->fresh()->stock)->toBe(4);
-    Http::assertSent(fn (Request $request) => $request['amount'] === 103900 && $request['receipt'] === $order->number);
     Mail::assertNothingQueued();
 });
 
-test('a Razorpay failure rolls the whole order back', function (string $failure) {
-    Http::fake(['api.razorpay.com/*' => $failure === 'error response'
-        ? Http::response(['error' => ['description' => 'Server error']], 500)
-        : Http::failedConnection('Timed out')]);
+test('a Razorpay failure rolls the whole order back', function () {
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->andThrow(new RazorpayException('Server error')));
 
     $this->withSession(['cart' => [$this->tee->id => 2]])
         ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']))
@@ -529,10 +545,12 @@ test('a Razorpay failure rolls the whole order back', function (string $failure)
     expect(Order::count())->toBe(0)
         ->and(Payment::count())->toBe(0)
         ->and($this->tee->fresh()->stock)->toBe(5);
-})->with(['error response', 'no connection']);
+});
 
 test('online payment is offered beyond the cash on delivery limit', function () {
-    Http::fake(['api.razorpay.com/v1/orders' => Http::response(['id' => 'order_TEST1', 'amount' => 399600, 'status' => 'created'])]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->andReturn(['id' => 'order_TEST1', 'amount' => 399600, 'status' => 'created']));
 
     $this->withSession(['cart' => [$this->tee->id => 4]])
         ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']))
@@ -543,13 +561,13 @@ test('online payment is offered beyond the cash on delivery limit', function () 
 
 test('online payment is refused when Razorpay is not set up', function () {
     config(['services.razorpay.key_id' => null]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldNotReceive('createOrder'));
 
     $this->withSession(['cart' => [$this->tee->id => 1]])
         ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']))
         ->assertSessionHasErrors('payment_method');
 
     expect(Order::count())->toBe(0);
-    Http::assertNothingSent();
 });
 ```
 
@@ -568,15 +586,18 @@ test('online payment is offered only when Razorpay is set up', function () {
 
 In `tests/Feature/OrderEmailTest.php`:
 
-1. Add the import:
+1. Add the imports:
 ```php
-use Illuminate\Support\Facades\Http;
+use App\Services\Razorpay;
+use Mockery\MockInterface;
 ```
 
 2. Append:
 ```php
 test('an online order sends no email until it is paid', function () {
-    Http::fake(['api.razorpay.com/v1/orders' => Http::response(['id' => 'order_TEST1', 'status' => 'created'])]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->andReturn(['id' => 'order_TEST1', 'status' => 'created']));
 
     test()->withSession(['cart' => [test()->variant->id => 1]])->post('/checkout', [
         'name' => 'Mami', 'phone' => '9876543210', 'email' => 'mami@example.com',
@@ -645,8 +666,7 @@ use App\Models\ProductVariant;
 use App\Models\ShippingZone;
 use App\Models\User;
 use App\Services\Razorpay;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\RequestException;
+use App\Services\RazorpayException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -680,7 +700,7 @@ use Illuminate\Validation\ValidationException;
             if ($paymentMethod === PaymentMethod::Razorpay) {
                 try {
                     $gatewayOrder = $this->razorpay->createOrder($total, $order->number);
-                } catch (RequestException|ConnectionException $exception) {
+                } catch (RazorpayException $exception) {
                     report($exception);
 
                     throw ValidationException::withMessages(['payment_method' => "We couldn't start the online payment. Please try again."]);
@@ -779,9 +799,10 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\ProductVariant;
-use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Http;
+use App\Services\Razorpay;
+use App\Services\RazorpayException;
 use Illuminate\Validation\ValidationException;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     $this->variant = ProductVariant::factory()->create(['stock' => 2]);
@@ -828,31 +849,36 @@ test('the unpaid-order sweep leaves an order that was just paid', function () {
 test('a captured online payment is refunded in full', function () {
     $this->order->update(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Confirmed]);
     $this->payment->update(['gateway_payment_id' => 'pay_TEST1', 'status' => PaymentStatus::Paid]);
-    Http::fake(['api.razorpay.com/v1/payments/pay_TEST1/refund' => Http::response(['id' => 'rfnd_TEST1', 'status' => 'processed'])]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->with('pay_TEST1', $this->order->total)
+        ->andReturn(['id' => 'rfnd_TEST1', 'status' => 'processed']));
 
     app(RefundPayment::class)->handle($this->order);
 
     expect($this->payment->fresh()->status)->toBe(PaymentStatus::Refunded)
         ->and($this->payment->fresh()->payload['refund']['id'])->toBe('rfnd_TEST1')
         ->and($this->order->fresh()->payment_status)->toBe(PaymentStatus::Refunded);
-    Http::assertSent(fn (Request $request) => $request['amount'] === $this->order->total);
 });
 
 test('a refund is only sent once', function () {
     $this->order->update(['payment_status' => PaymentStatus::Paid]);
     $this->payment->update(['gateway_payment_id' => 'pay_TEST1', 'status' => PaymentStatus::Paid]);
-    Http::fake(['api.razorpay.com/v1/payments/pay_TEST1/refund' => Http::response(['id' => 'rfnd_TEST1', 'status' => 'processed'])]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->with('pay_TEST1', $this->order->total)
+        ->andReturn(['id' => 'rfnd_TEST1', 'status' => 'processed']));
 
     app(RefundPayment::class)->handle($this->order);
     app(RefundPayment::class)->handle($this->order);
-
-    Http::assertSentCount(1);
 });
 
 test('a failed refund leaves the payment as paid', function () {
     $this->order->update(['payment_status' => PaymentStatus::Paid]);
     $this->payment->update(['gateway_payment_id' => 'pay_TEST1', 'status' => PaymentStatus::Paid]);
-    Http::fake(['api.razorpay.com/*' => Http::response(['error' => ['description' => 'Refund failed']], 400)]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->andThrow(new RazorpayException('Refund failed')));
 
     expect(fn () => app(RefundPayment::class)->handle($this->order))->toThrow(ValidationException::class);
 
@@ -861,9 +887,9 @@ test('a failed refund leaves the payment as paid', function () {
 });
 
 test('an order without a captured payment cannot be refunded', function () {
-    expect(fn () => app(RefundPayment::class)->handle($this->order))->toThrow(ValidationException::class);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldNotReceive('refund'));
 
-    Http::assertNothingSent();
+    expect(fn () => app(RefundPayment::class)->handle($this->order))->toThrow(ValidationException::class);
 });
 ```
 
@@ -949,8 +975,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\Razorpay;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\RequestException;
+use App\Services\RazorpayException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -980,7 +1005,7 @@ class RefundPayment
 
             try {
                 $refund = $this->razorpay->refund($payment->gateway_payment_id, $payment->amount);
-            } catch (RequestException|ConnectionException $exception) {
+            } catch (RazorpayException $exception) {
                 report($exception);
 
                 throw ValidationException::withMessages(['payment' => "Razorpay couldn't refund this payment. Try again in a few minutes."]);
@@ -1025,7 +1050,7 @@ git commit -m "feat: cancel order and refund payment actions"
 - Produces:
   - `MarkOrderPaid::handle(Order $order, string $gatewayOrderId, string $paymentId, int $amount, array $payload = []): void`. It locks the order and finds the first payment row for `$gatewayOrderId`.
     - It throws `UnexpectedValueException` when there is no such row or the amount differs.
-    - If the row is already `Paid` or `Refunded`, it does nothing.
+    - If the row is already `Refunded`, or already `Paid` on an open order, it does nothing. If it is `Paid` on a cancelled order, it retries the refund.
     - Otherwise it sets the row's `gateway_payment_id` and status `Paid`, and adds `payload['payment']`. Then:
       - an open order becomes `Paid` + `Confirmed`, and the placed emails are sent;
       - a cancelled order stays cancelled and the payment is refunded.
@@ -1051,10 +1076,11 @@ use App\Mail\OrderPlaced;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
-use Illuminate\Support\Facades\Http;
+use App\Services\Razorpay;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Testing\TestResponse;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     Mail::fake();
@@ -1114,7 +1140,10 @@ test('confirming the same payment twice sends the emails once', function () {
 test('a payment that lands after the order was cancelled is refunded', function () {
     $this->order->update(['payment_status' => PaymentStatus::Failed, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
     $this->payment->update(['status' => PaymentStatus::Failed]);
-    Http::fake(['api.razorpay.com/v1/payments/pay_TEST1/refund' => Http::response(['id' => 'rfnd_TEST1', 'status' => 'processed'])]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->with('pay_TEST1', $this->order->total)
+        ->andReturn(['id' => 'rfnd_TEST1', 'status' => 'processed']));
 
     app(MarkOrderPaid::class)->handle($this->order, 'order_TEST1', 'pay_TEST1', $this->order->total);
 
@@ -1124,6 +1153,18 @@ test('a payment that lands after the order was cancelled is refunded', function 
         ->and($order->payment_status)->toBe(PaymentStatus::Refunded)
         ->and($this->payment->fresh()->status)->toBe(PaymentStatus::Refunded);
     Mail::assertNothingQueued();
+});
+
+test('a late payment whose refund failed is refunded on the next delivery', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Failed, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
+    $this->payment->update(['gateway_payment_id' => 'pay_TEST1', 'status' => PaymentStatus::Paid]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->andReturn(['id' => 'rfnd_TEST1', 'status' => 'processed']));
+
+    app(MarkOrderPaid::class)->handle($this->order, 'order_TEST1', 'pay_TEST1', $this->order->total);
+
+    expect($this->order->fresh()->payment_status)->toBe(PaymentStatus::Refunded);
 });
 
 test('a payment for a different amount is rejected', function () {
@@ -1203,8 +1244,13 @@ class MarkOrderPaid
                 throw new UnexpectedValueException("Payment {$paymentId} does not match order {$order->number}.");
             }
 
-            if (in_array($payment->status, [PaymentStatus::Paid, PaymentStatus::Refunded], true)) {
+            if ($payment->status === PaymentStatus::Refunded) {
                 return 'already recorded';
+            }
+
+            if ($payment->status === PaymentStatus::Paid) {
+                // A late payment whose refund failed last time: try the refund again.
+                return $order->fulfilment_status === FulfilmentStatus::Cancelled ? 'order cancelled' : 'already recorded';
             }
 
             $payment->update([
@@ -1481,6 +1527,8 @@ class RazorpayWebhookController extends Controller
     /**
      * Razorpay posts every subscribed event here. This is the source of truth for payments:
      * signature-checked, idempotent, and answered 2xx once verified so Razorpay stops retrying.
+     * The exception is a late payment whose refund fails: that error is left to surface as a 500,
+     * so Razorpay redelivers the event and the refund is tried again.
      */
     public function __invoke(Request $request, Razorpay $razorpay, MarkOrderPaid $markOrderPaid): Response
     {
@@ -1970,12 +2018,30 @@ git commit -m "feat: pay online at checkout and on the order page"
 
 ## Owner setup (not code)
 
-- In the Razorpay dashboard (test mode), add a webhook to `https://<public-url>/webhooks/razorpay`:
-  - events `payment.captured` and `payment.failed`;
-  - secret = `RAZORPAY_WEBHOOK_SECRET`.
-- Locally this needs a tunnel (for example `cloudflared tunnel --url http://localhost:8000`). The browser confirmation works without it.
-- Keep payment capture on **Automatic** in the dashboard (Settings → Payment capture). Orders confirm on `payment.captured`.
-- Production (Phase 6): live keys after KYC; the scheduler (`* * * * * php artisan schedule:run`) so the 5-minute sweep runs.
+**Webhook (Razorpay dashboard, Test Mode).** Steps follow https://razorpay.com/docs/webhooks/setup-edit-payments/; webhooks are set up separately in Test and Live mode.
+1. Switch the dashboard to **Test Mode** (toggle at the top).
+2. Go to **Accounts & Settings**. Under **Website and app settings**, click **Webhooks**, then **+ Add New Webhook**.
+3. **Webhook URL:** `https://<public-url>/webhooks/razorpay`.
+   - Razorpay rejects `localhost`, `.local`/`.internal` hosts and some tunnel or inspector domains (it names `ngrok.io` and `webhook.site`).
+   - For local testing, expose the dev server with a tunnel and use its https URL: `zrok`, which Razorpay's docs suggest, or `cloudflared tunnel --url http://localhost:8000` (install with `brew install cloudflared`).
+   - A quick tunnel's URL changes on every run, so edit the webhook URL each time.
+4. **Secret:** paste the value of `RAZORPAY_WEBHOOK_SECRET` from `.env`.
+   - Razorpay does not generate it: whatever is typed here must match `.env` exactly.
+   - It is separate from the API key secret.
+5. **Alert Email:** your email. Razorpay mails it when deliveries keep failing or the webhook is disabled.
+6. **Active Events:** tick `payment.captured` and `payment.failed` only.
+7. **Create Webhook.** In Test Mode it asks for an OTP; the default test OTP is `754081`.
+
+Razorpay expects a 2xx reply within 5 seconds. It retries failures with back-off for 24 hours, then disables the webhook. Every handler here answers quickly. The exception is the rare late-payment refund: if Razorpay is slow, that delivery may count as failed and be retried, and the retry is harmless because the refund is idempotent.
+
+The browser confirmation works without the webhook, so local testing can skip it until the webhook itself needs testing.
+
+**Also:**
+- Keep payment capture on **Automatic** (Accounts & Settings → Payments Capture; this is Razorpay's default). Orders confirm on `payment.captured`.
+- Production (Phase 6):
+  - live keys after KYC;
+  - a separate Live Mode webhook to `https://arusa.co.in/webhooks/razorpay`, with its own secret in the server `.env`;
+  - the scheduler (`* * * * * php artisan schedule:run`), so the 5-minute sweep runs.
 
 ## Known follow-ups (not Phase 4)
 
