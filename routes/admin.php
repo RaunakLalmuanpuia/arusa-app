@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\ShippingZoneController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'can:access-admin'])
@@ -22,6 +23,7 @@ Route::middleware(['auth', 'can:access-admin'])
         Route::delete('products/{product}/images/{image}', [ProductImageController::class, 'destroy'])
             ->scopeBindings()
             ->name('products.images.destroy');
+        Route::resource('shipping-zones', ShippingZoneController::class)->except('show');
         Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
     });
