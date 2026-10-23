@@ -24,6 +24,13 @@ test('visible products need an active product, active category and an active var
     expect(Product::visible()->pluck('id')->all())->toBe([$visible->id]);
 });
 
+test('a product under an inactive parent category is not visible', function () {
+    $child = Category::factory()->for(Category::factory()->inactive(), 'parent')->create();
+    Product::factory()->for($child)->has(ProductVariant::factory(), 'variants')->create();
+
+    expect(Product::visible()->count())->toBe(0);
+});
+
 test('card data reports the price range, stock and first image', function () {
     $product = Product::factory()->create(['base_price' => 50000]);
     ProductVariant::factory()->for($product)->outOfStock()->create();

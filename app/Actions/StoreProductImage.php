@@ -17,6 +17,9 @@ class StoreProductImage
      */
     public function handle(Product $product, UploadedFile $file): ProductImage
     {
+        // A 6000x6000 decode is ~144 MB, plus the rotated and scaled copies.
+        ini_set('memory_limit', '512M');
+
         $source = @imagecreatefromstring($file->getContent());
 
         if ($source === false) {
@@ -24,13 +27,28 @@ class StoreProductImage
         }
 
         $source = $this->uprightJpeg($source, $file);
+
+        if ($source === false) {
+            throw $this->processingFailed($file);
+        }
+
         $path = "products/{$product->id}/".Str::uuid();
+
+        $written = [];
 
         foreach (ProductImage::WIDTHS as $width) {
             $resized = imagescale($source, min($width, imagesx($source)));
             ob_start();
-            imagewebp($resized, null, 80);
-            Storage::disk('public')->put("{$path}-{$width}.webp", ob_get_clean());
+            $encoded = $resized !== false && imagewebp($resized, null, 80);
+            $webp = ob_get_clean();
+
+            if (! $encoded) {
+                Storage::disk('public')->delete($written);
+
+                throw $this->processingFailed($file);
+            }
+
+            Storage::disk('public')->put($written[] = "{$path}-{$width}.webp", $webp);
         }
 
         return $product->images()->create([
@@ -40,10 +58,15 @@ class StoreProductImage
         ]);
     }
 
+    private function processingFailed(UploadedFile $file): ValidationException
+    {
+        return ValidationException::withMessages(['images' => "Could not process {$file->getClientOriginalName()}."]);
+    }
+
     /**
      * Phone photos store rotation in EXIF instead of the pixels; GD ignores it.
      */
-    private function uprightJpeg(GdImage $image, UploadedFile $file): GdImage
+    private function uprightJpeg(GdImage $image, UploadedFile $file): GdImage|false
     {
         if ($file->getMimeType() !== 'image/jpeg') {
             return $image;

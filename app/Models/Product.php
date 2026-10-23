@@ -63,7 +63,8 @@ class Product extends Model
     protected function visible(Builder $query): void
     {
         $query->where('is_active', true)
-            ->whereHas('category', fn (Builder $category) => $category->where('is_active', true))
+            ->whereHas('category', fn (Builder $category) => $category->where('is_active', true)
+                ->where(fn (Builder $q) => $q->whereNull('parent_id')->orWhereHas('parent', fn (Builder $p) => $p->where('is_active', true))))
             ->whereHas('variants', fn (Builder $variant) => $variant->where('is_active', true));
     }
 

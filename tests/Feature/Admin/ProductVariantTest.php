@@ -39,6 +39,17 @@ test('size and colour combinations must be unique', function () {
         ->assertSessionHasErrors('variants');
 });
 
+test('the same variant id cannot appear twice', function () {
+    $existing = ProductVariant::factory()->for($this->product)->create(['sku' => 'TEE-BLACK-M']);
+
+    $this->actingAs($this->admin)
+        ->put("/admin/products/{$this->product->id}/variants", ['variants' => [
+            variantRow(['id' => $existing->id]),
+            variantRow(['id' => $existing->id, 'size' => 'L', 'sku' => 'TEE-BLACK-L']),
+        ]])
+        ->assertSessionHasErrors(['variants.0.id', 'variants.1.id']);
+});
+
 test('a sku used by another product is rejected', function () {
     ProductVariant::factory()->create(['sku' => 'TEE-BLACK-M']);
 

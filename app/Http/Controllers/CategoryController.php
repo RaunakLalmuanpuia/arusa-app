@@ -15,7 +15,7 @@ class CategoryController extends Controller
 {
     public function show(Request $request, Category $category): Response
     {
-        abort_unless($category->is_active, 404);
+        abort_unless($category->is_active && ($category->parent?->is_active ?? true), 404);
 
         $filters = $request->validate([
             'size' => ['nullable', 'string', 'max:30'],

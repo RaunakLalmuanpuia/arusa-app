@@ -21,7 +21,7 @@ class UpdateProductVariantsRequest extends FormRequest
     {
         $rules = [
             'variants' => ['required', 'array', 'min:1', 'max:100'],
-            'variants.*.id' => ['nullable', 'integer', Rule::exists('product_variants', 'id')->where('product_id', $this->route('product')->id)],
+            'variants.*.id' => ['nullable', 'integer', 'distinct', Rule::exists('product_variants', 'id')->where('product_id', $this->route('product')->id)],
             'variants.*.size' => ['nullable', 'string', 'max:30'],
             'variants.*.colour' => ['nullable', 'string', 'max:30'],
             'variants.*.sku' => ['required', 'string', 'max:50', 'distinct:ignore_case'],

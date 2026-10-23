@@ -34,6 +34,12 @@ test('a parent category lists its own and its subcategories visible products', f
             ->where('sizes', ['M', 'L']));
 });
 
+test('a subcategory of an inactive parent returns 404', function () {
+    $this->apparel->update(['is_active' => false]);
+
+    $this->get("/categories/{$this->tees->slug}")->assertNotFound();
+});
+
 test('size and colour filters match one in-stock variant', function () {
     $match = productWith($this->apparel, ['size' => 'M', 'colour' => 'Black']);
     productWith($this->apparel, ['size' => 'M', 'colour' => 'Cream'], ['size' => 'L', 'colour' => 'Black']);

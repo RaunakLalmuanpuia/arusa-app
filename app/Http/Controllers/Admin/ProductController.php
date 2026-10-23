@@ -86,8 +86,9 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
-        $product->images->each(fn (ProductImage $image) => $image->deleteFiles());
+        $images = $product->images;
         $product->delete();
+        $images->each(fn (ProductImage $image) => $image->deleteFiles());
 
         return to_route('admin.products.index')->with('status', 'Product deleted.');
     }
