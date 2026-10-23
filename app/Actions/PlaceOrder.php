@@ -5,6 +5,8 @@ namespace App\Actions;
 use App\Enums\FulfilmentStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Mail\NewOrderReceived;
+use App\Mail\OrderPlaced;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -12,6 +14,7 @@ use App\Models\ShippingZone;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class PlaceOrder
@@ -34,7 +37,7 @@ class PlaceOrder
 
         $paymentMethod = PaymentMethod::from($customer['payment_method']);
 
-        return DB::transaction(function () use ($user, $customer, $quantities, $zone, $paymentMethod): Order {
+        $order = DB::transaction(function () use ($user, $customer, $quantities, $zone, $paymentMethod): Order {
             $variants = ProductVariant::with('product')
                 ->whereKey(array_keys($quantities))
                 ->orderBy('id')
@@ -112,6 +115,20 @@ class PlaceOrder
 
             return $order;
         });
+
+        $order->load('items');
+
+        if ($order->customer_email) {
+            Mail::to($order->customer_email)->queue(new OrderPlaced($order));
+        }
+
+        $adminEmails = User::where('is_admin', true)->pluck('email');
+
+        if ($adminEmails->isNotEmpty()) {
+            Mail::to($adminEmails)->queue(new NewOrderReceived($order));
+        }
+
+        return $order;
     }
 
     private function variantSuffix(ProductVariant $variant): string
