@@ -18,6 +18,15 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Mirror the column default so freshly created models are never null.
+     *
+     * @var array<string, bool>
+     */
+    protected $attributes = [
+        'is_admin' => false,
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -27,6 +36,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 }
