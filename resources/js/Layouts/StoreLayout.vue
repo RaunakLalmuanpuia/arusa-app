@@ -5,6 +5,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import IconMenu from '@/Components/Icons/IconMenu.vue';
 import IconClose from '@/Components/Icons/IconClose.vue';
 import IconUser from '@/Components/Icons/IconUser.vue';
+import IconSearch from '@/Components/Icons/IconSearch.vue';
 import IconChat from '@/Components/Icons/IconChat.vue';
 
 const page = usePage();
@@ -71,6 +72,14 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         :class="focusRing"
                     >
                         Admin
+                    </Link>
+                    <Link
+                        :href="route('search')"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
+                        :class="focusRing"
+                        aria-label="Search"
+                    >
+                        <IconSearch class="h-6 w-6" />
                     </Link>
                     <Link
                         :href="page.props.auth.user ? route('dashboard') : route('login')"

@@ -5,6 +5,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -13,6 +14,7 @@ Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->
 
 Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
+Route::get('/search', SearchController::class)->name('search');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
