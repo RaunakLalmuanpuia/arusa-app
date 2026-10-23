@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\FulfilmentStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
+use Database\Factories\OrderFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\URL;
+
+#[Fillable([
+    'user_id', 'customer_name', 'customer_phone', 'customer_email',
+    'ship_line1', 'ship_locality', 'ship_district', 'ship_pincode', 'shipping_zone_id',
+    'subtotal', 'shipping', 'total', 'payment_method', 'payment_status', 'fulfilment_status',
+    'tracking_note', 'placed_at',
+])]
+class Order extends Model
+{
+    /** @use HasFactory<OrderFactory> */
+    use HasFactory;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'subtotal' => 'integer',
+            'shipping' => 'integer',
+            'total' => 'integer',
+            'payment_method' => PaymentMethod::class,
+            'payment_status' => PaymentStatus::class,
+            'fulfilment_status' => FulfilmentStatus::class,
+            'placed_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * Customer-facing order number, derived from the id: ARU-000123.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function number(): Attribute
+    {
+        return Attribute::get(fn (): string => sprintf('ARU-%06d', $this->id));
+    }
+
+    /**
+     * @return HasMany<OrderItem, $this>
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class)->orderBy('id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<ShippingZone, $this>
+     */
+    public function shippingZone(): BelongsTo
+    {
+        return $this->belongsTo(ShippingZone::class);
+    }
+
+    /**
+     * Permanent signed link to the order status page, safe to email to a guest.
+     */
+    public function trackingUrl(): string
+    {
+        return URL::signedRoute('orders.show', $this);
+    }
+}

@@ -38,6 +38,9 @@ const deleteProduct = (product) => {
             </div>
         </template>
 
+        <p v-if="$page.props.errors.product" class="mb-4 rounded bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">
+            {{ $page.props.errors.product }}
+        </p>
         <AdminTable :rows="products" :columns="columns" :filters="filters">
             <template #filters="{ query }">
                 <select
