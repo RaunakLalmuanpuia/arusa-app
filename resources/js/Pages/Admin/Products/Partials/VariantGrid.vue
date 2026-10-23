@@ -13,12 +13,13 @@ const props = defineProps({
 const sizes = ref('');
 const colours = ref('');
 
-const form = useForm({
-    variants: props.variants.map((variant) => ({
+const toRows = (variants) =>
+    variants.map((variant) => ({
         ...variant,
         price_override: variant.price_override === null ? '' : variant.price_override / 100,
-    })),
-});
+    }));
+
+const form = useForm({ variants: toRows(props.variants) });
 
 const split = (text) => {
     const values = text.split(',').map((value) => value.trim()).filter(Boolean);
@@ -45,7 +46,13 @@ const generate = () => {
 const save = () => {
     form.transform((data) => ({
         variants: data.variants.map((variant) => ({ ...variant, price_override: toPaise(variant.price_override) })),
-    })).put(route('admin.products.variants.update', props.product.id), { preserveScroll: true });
+    })).put(route('admin.products.variants.update', props.product.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            form.variants = toRows(props.variants);
+            form.defaults();
+        },
+    });
 };
 
 const cell = 'w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500';
