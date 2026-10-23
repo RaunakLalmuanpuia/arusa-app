@@ -25,7 +25,15 @@
 
 ## Prerequisite (owner)
 
-- [ ] Logo file placed at `resources/images/logo.svg` (preferred) or `resources/images/logo.png`. Task 6 is blocked until it exists.
+- [x] Logo provided at `public/logo.jpg` (1254×1254 JPG, black on white, circular wolf badge: "ARUSA / Apparel Co. / Estd 2026 / Premium Goods").
+- [x] Design reference provided at `public/Assets/Image 1.jpg` (1536×1024 product board).
+
+### Design direction (from the reference)
+
+- **Mood:** vintage-heritage streetwear. Monochrome: near-black garments, warm off-white/cream type, warm taupe/stone backgrounds, soft directional light. No bright accent colours.
+- **Type:** wide, high-contrast serif wordmark in caps; small **letter-spaced uppercase** sans labels ("STREETWEAR / PREMIUM QUALITY"); thin rule lines either side of headings.
+- **Layout cues:** detail tiles (neck label, sleeve, print close-up) with small spaced captions underneath; a row of outline feature icons with two-line captions (Premium Cotton, Puff Print Detail, Durable & Long Lasting, Comfort Fit); spec table (label column / value column).
+- **Owner to confirm:** the board says "EST. 2024" and shows a lion on the neck label, while the logo says "Estd 2026" with a wolf. The site follows the **logo** (wolf, 2026) unless told otherwise.
 
 ## File Map
 
@@ -1431,7 +1439,7 @@ git commit -m "feat: markdown content pages with admin CRUD"
 - Consumes: shared props `store.*`, `auth.user.is_admin`; route `pages.show` with slugs `about`, `contact`, `size-guide`, `shipping-returns`; icons `IconMenu`, `IconClose`.
 - Produces: Tailwind colour tokens `brand-{50..900}` and `ink`, font family `display` + `sans`; `StoreLayout.vue` (default slot) used by every storefront page from Phase 2 on; route `home` (`GET /`) rendering `Home`.
 
-**Blocked until** the logo exists at `resources/images/logo.svg` or `.png`.
+Logo source: `public/logo.jpg`. Design reference: `public/Assets/Image 1.jpg` (see "Design direction" at the top of this plan).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1454,7 +1462,14 @@ Expected: FAIL (component is `Welcome`).
 
 - [ ] **Step 2: Derive the design system (ui-ux-pro-max)**
 
-Invoke the `ui-ux-pro-max` skill with: "Apparel + lifestyle e-commerce, single brand from Aizawl, Mizoram; mobile-first, low-bandwidth audience; brand must derive from the logo at `resources/images/logo.*`." Look at the logo first. Record the chosen palette (one brand scale 50–900 + an ink/text colour), heading and body fonts (must be on Google Fonts or Bunny Fonts, max 2 families, max 3 weights total), radius and spacing scale. If the skill writes a design-system file, keep it under `docs/design/` and commit it.
+First move the reference out of the public web root (it is not a site asset): (it was committed in Task 1):
+
+```bash
+mkdir -p docs/design
+git mv "public/Assets/Image 1.jpg" docs/design/reference-product-board.jpg
+```
+
+Look at `public/logo.jpg` and `docs/design/reference-product-board.jpg`, then invoke the `ui-ux-pro-max` skill with: "Vintage-heritage streetwear apparel e-commerce, single brand from Aizawl, Mizoram; mobile-first, low-bandwidth audience. Monochrome palette: near-black, warm cream/off-white, warm taupe/stone neutrals, no bright accents. Wide high-contrast serif for the wordmark and headings, letter-spaced uppercase sans for labels. Match the attached logo and product board." Record the chosen palette (one brand scale 50–900 + an ink/text colour), heading and body fonts (must be on Google Fonts or Bunny Fonts, max 2 families, max 3 weights total), radius and spacing scale. If the skill writes a design-system file, keep it under `docs/design/` and commit it.
 
 - [ ] **Step 3: Brand tokens**
 
@@ -1465,15 +1480,15 @@ Update `tailwind.config.js` `theme.extend` with the values from Step 2 (shape sh
         extend: {
             colors: {
                 brand: {
-                    50: '#f5f7f6', 100: '#e6ebe8', 200: '#cbd6d0', 300: '#a3b8ad',
-                    400: '#76937f', 500: '#577665', 600: '#445e50', 700: '#384c42',
-                    800: '#2f3e37', 900: '#28342f',
+                    50: '#f7f3ec', 100: '#efe8dc', 200: '#ddd2c1', 300: '#c4b6a1',
+                    400: '#a59580', 500: '#867663', 600: '#6b5d4e', 700: '#53483d',
+                    800: '#2e2924', 900: '#151312',
                 },
-                ink: '#1a1a1a',
+                ink: '#121110',
             },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
-                display: ['Figtree', ...defaultTheme.fontFamily.sans],
+                display: ['"Playfair Display"', ...defaultTheme.fontFamily.serif],
             },
         },
     },
@@ -1483,17 +1498,41 @@ Update the font `<link>` in `resources/views/app.blade.php` to load exactly the 
 
 - [ ] **Step 4: Real logo**
 
-Replace `resources/js/Components/ApplicationLogo.vue` (use `logo.png` in the import if no SVG exists):
+The source logo is a 280 KB, 1254 px JPG on a white background, which is too heavy for a header. Make a small copy with macOS `sips` (no new dependency) and keep the original as the master:
+
+```bash
+mkdir -p resources/images
+sips -Z 256 public/logo.jpg --out resources/images/logo-256.jpg
+sips -Z 512 public/logo.jpg --out resources/images/logo-512.jpg
+```
+
+Expected: both files exist and `logo-256.jpg` is under ~40 KB (`ls -lh resources/images`).
+
+Replace `resources/js/Components/ApplicationLogo.vue`:
 
 ```vue
 <script setup>
-import logoUrl from '../../images/logo.svg';
+import logo256 from '../../images/logo-256.jpg';
+import logo512 from '../../images/logo-512.jpg';
+
+defineProps({
+    onDark: { type: Boolean, default: false },
+});
 </script>
 
 <template>
-    <img :src="logoUrl" alt="Arusa" />
+    <!-- JPG has a white background: multiply blends it into light surfaces; invert + screen does the same on dark ones -->
+    <img
+        :src="logo256"
+        :srcset="`${logo256} 256w, ${logo512} 512w`"
+        sizes="64px"
+        alt="Arusa Apparel Co."
+        :class="onDark ? 'invert mix-blend-screen' : 'mix-blend-multiply'"
+    />
 </template>
 ```
+
+Keep `public/logo.jpg` as the master file (also usable as an Open Graph image later). Shortcut noted for the owner: a transparent PNG/SVG of the logo would render crisper; swap it in when available.
 
 In `GuestLayout.vue`, change the logo classes from `h-20 w-20 fill-current text-gray-500` to `h-16 w-auto`.
 
