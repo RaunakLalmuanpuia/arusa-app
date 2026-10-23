@@ -15,7 +15,7 @@ class RazorpayWebhookController extends Controller
     /**
      * Razorpay posts every subscribed event here. This is the source of truth for payments:
      * signature-checked, idempotent, and answered 2xx once verified so Razorpay stops retrying.
-     * The exception is a late payment whose refund fails: that error is left to surface as a 500,
+     * The exception is a late payment whose refund fails: that error is left to surface as a non-2xx response,
      * so Razorpay redelivers the event and the refund is tried again.
      */
     public function __invoke(Request $request, Razorpay $razorpay, MarkOrderPaid $markOrderPaid): Response

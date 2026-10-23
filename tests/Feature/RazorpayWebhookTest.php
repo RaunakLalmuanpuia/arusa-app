@@ -93,3 +93,14 @@ test('a capture for the wrong amount is reported and ignored', function () {
     expect($this->order->fresh()->payment_status)->toBe(PaymentStatus::AwaitingPayment);
     Exceptions::assertReported(UnexpectedValueException::class);
 });
+
+test('a capture for an attempt first reported as failed still pays the order', function () {
+    postRazorpayWebhook(razorpayEvent('payment.failed', 'pay_LATE1', $this->order->total))->assertNoContent();
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_LATE1', $this->order->total))->assertNoContent();
+
+    expect($this->order->fresh()->payment_status)->toBe(PaymentStatus::Paid)
+        ->and($this->order->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Confirmed)
+        ->and($this->payment->fresh()->status)->toBe(PaymentStatus::Paid)
+        ->and($this->payment->fresh()->gateway_payment_id)->toBe('pay_LATE1')
+        ->and($this->order->payments()->count())->toBe(1);
+});

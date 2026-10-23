@@ -42,6 +42,9 @@ class MarkOrderPaid
                 return $order->fulfilment_status === FulfilmentStatus::Cancelled ? 'order cancelled' : 'already recorded';
             }
 
+            // This attempt was reported as failed earlier and has now succeeded: drop the stale row.
+            $order->payments()->where('gateway_payment_id', $paymentId)->where('status', PaymentStatus::Failed)->whereKeyNot($payment->id)->delete();
+
             $payment->update([
                 'gateway_payment_id' => $paymentId,
                 'status' => PaymentStatus::Paid,
