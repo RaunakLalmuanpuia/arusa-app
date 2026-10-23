@@ -2,10 +2,12 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ProductForm from './Partials/ProductForm.vue';
+import VariantGrid from './Partials/VariantGrid.vue';
 import { toPaise } from '@/money';
 
 const props = defineProps({
     product: { type: Object, required: true },
+    variants: { type: Array, required: true },
     categories: { type: Array, required: true },
 });
 
@@ -30,6 +32,7 @@ const submit = () => {
 
         <div class="space-y-8">
             <ProductForm :form="form" :categories="categories" @submit="submit" />
+            <VariantGrid :product="product" :variants="variants" />
         </div>
     </AdminLayout>
 </template>

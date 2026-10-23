@@ -64,6 +64,7 @@ class ProductController extends Controller
     {
         return Inertia::render('Admin/Products/Edit', [
             'product' => $product->only('id', 'name', 'slug', 'category_id', 'description', 'base_price', 'is_active'),
+            'variants' => $product->variants->map->only('id', 'size', 'colour', 'sku', 'price_override', 'stock', 'is_active'),
             'categories' => $this->categoryOptions(),
         ]);
     }
