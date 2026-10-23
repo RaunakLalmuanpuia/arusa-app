@@ -16,6 +16,7 @@ const colours = ref('');
 const toRows = (variants) =>
     variants.map((variant) => ({
         ...variant,
+        stock_was: variant.stock,
         price_override: variant.price_override === null ? '' : variant.price_override / 100,
     }));
 

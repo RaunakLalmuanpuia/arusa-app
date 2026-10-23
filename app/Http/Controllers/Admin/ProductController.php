@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Models\Category;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Http\RedirectResponse;
@@ -86,6 +87,10 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        if (OrderItem::whereIn('product_variant_id', $product->variants()->select('id'))->exists()) {
+            return back()->withErrors(['product' => "\"{$product->name}\" has orders. Untick \"Visible on the store\" to hide it instead."]);
+        }
+
         $images = $product->images;
         $product->delete();
         $images->each(fn (ProductImage $image) => $image->deleteFiles());

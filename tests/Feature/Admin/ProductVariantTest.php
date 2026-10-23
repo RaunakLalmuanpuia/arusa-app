@@ -85,3 +85,27 @@ test('non-admins cannot save variants', function () {
         ->put("/admin/products/{$this->product->id}/variants", ['variants' => [variantRow()]])
         ->assertForbidden();
 });
+
+test('saving is refused when stock changed since the page loaded', function () {
+    $variant = ProductVariant::factory()->for($this->product)->create(['size' => 'M', 'colour' => 'Black', 'sku' => 'TEE-BLACK-M', 'stock' => 4]);
+
+    $this->actingAs($this->admin)
+        ->put("/admin/products/{$this->product->id}/variants", ['variants' => [
+            variantRow(['id' => $variant->id, 'stock' => 10, 'stock_was' => 5]),
+        ]])
+        ->assertSessionHasErrors('variants.0.stock');
+
+    expect($variant->fresh()->stock)->toBe(4);
+});
+
+test('saving works when stock is unchanged since the page loaded', function () {
+    $variant = ProductVariant::factory()->for($this->product)->create(['size' => 'M', 'colour' => 'Black', 'sku' => 'TEE-BLACK-M', 'stock' => 4]);
+
+    $this->actingAs($this->admin)
+        ->put("/admin/products/{$this->product->id}/variants", ['variants' => [
+            variantRow(['id' => $variant->id, 'stock' => 10, 'stock_was' => 4]),
+        ]])
+        ->assertSessionHasNoErrors();
+
+    expect($variant->fresh()->stock)->toBe(10);
+});

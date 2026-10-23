@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Category;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\User;
@@ -83,4 +84,15 @@ test('deleting a product removes its image files', function () {
 
 test('non-admins cannot manage products', function () {
     $this->actingAs(User::factory()->create())->post('/admin/products', productPayload())->assertForbidden();
+});
+
+test('a product with orders cannot be deleted', function () {
+    $item = OrderItem::factory()->create();
+    $product = $item->variant->product;
+
+    $this->actingAs($this->admin)
+        ->delete("/admin/products/{$product->id}")
+        ->assertSessionHasErrors('product');
+
+    expect($product->fresh())->not->toBeNull();
 });

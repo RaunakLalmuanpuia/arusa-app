@@ -27,6 +27,7 @@ class UpdateProductVariantsRequest extends FormRequest
             'variants.*.sku' => ['required', 'string', 'max:50', 'distinct:ignore_case'],
             'variants.*.price_override' => ['nullable', 'integer', 'min:100', 'max:10000000'],
             'variants.*.stock' => ['required', 'integer', 'min:0', 'max:100000'],
+            'variants.*.stock_was' => ['nullable', 'integer', 'min:0'],
             'variants.*.is_active' => ['required', 'boolean'],
         ];
 
