@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
@@ -20,6 +21,7 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'store'])->middleware('throttle:60,1')->name('cart.store');
 Route::patch('/cart/{variant}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{variant}', [CartController::class, 'destroy'])->name('cart.destroy');
+Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
