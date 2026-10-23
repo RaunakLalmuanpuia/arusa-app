@@ -1,6 +1,9 @@
 <script setup>
 import { Head, usePage } from '@inertiajs/vue3';
 import StoreLayout from '@/Layouts/StoreLayout.vue';
+import ProductGrid from '@/Components/Store/ProductGrid.vue';
+
+defineProps({ products: { type: Array, required: true } });
 
 const store = usePage().props.store;
 </script>
@@ -29,7 +32,15 @@ const store = usePage().props.store;
             </div>
         </section>
 
-        <section class="mx-auto max-w-2xl px-4 py-16 text-center sm:py-20">
+        <section v-if="products.length" class="mx-auto max-w-6xl px-4 py-16 sm:py-20">
+            <div class="flex items-center justify-center gap-4">
+                <span class="h-px w-10 bg-brand-400" aria-hidden="true" />
+                <h2 class="text-xs font-medium uppercase tracking-[0.3em] text-brand-600">New in</h2>
+                <span class="h-px w-10 bg-brand-400" aria-hidden="true" />
+            </div>
+            <ProductGrid :products="products" class="mt-10" />
+        </section>
+        <section v-else class="mx-auto max-w-2xl px-4 py-16 text-center sm:py-20">
             <p class="text-xs font-medium uppercase tracking-[0.3em] text-brand-600">The first drop</p>
             <h2 class="mt-3 font-display text-3xl font-semibold sm:text-4xl">Our collection is coming soon.</h2>
             <p class="mt-4 text-base leading-relaxed text-brand-700">

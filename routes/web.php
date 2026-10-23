@@ -1,12 +1,15 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::inertia('/', 'Home')->name('home');
+Route::get('/', HomeController::class)->name('home');
+Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 
 Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
