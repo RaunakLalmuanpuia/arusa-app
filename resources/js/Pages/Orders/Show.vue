@@ -30,7 +30,10 @@ const loadCheckout = () =>
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.onload = resolve;
-        script.onerror = () => reject(new Error('Razorpay Checkout could not load.'));
+        script.onerror = () => {
+            script.remove();
+            reject(new Error('Razorpay Checkout could not load.'));
+        };
         document.head.appendChild(script);
     });
 
@@ -55,7 +58,14 @@ const pay = async () => {
         description: `Order ${props.order.number}`,
         prefill: props.payment.prefill,
         theme: { color: '#121110' },
-        handler: (response) => router.post(props.payment.verify_url, response, { preserveScroll: true }),
+        handler: (response) =>
+            router.post(props.payment.verify_url, response, {
+                preserveScroll: true,
+                onFinish: () => {
+                    opening.value = false;
+                    paymentMessage.value = props.payment_error;
+                },
+            }),
         modal: {
             ondismiss: () => {
                 opening.value = false;
