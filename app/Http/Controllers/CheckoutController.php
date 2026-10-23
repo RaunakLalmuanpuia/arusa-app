@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\PlaceOrder;
+use App\Http\Requests\CheckoutRequest;
 use App\Models\Address;
 use App\Models\ShippingZone;
 use App\Services\Cart;
@@ -36,6 +38,14 @@ class CheckoutController extends Controller
             'districts' => Address::DISTRICTS,
             'quote' => fn (): ?array => $this->quote((string) $request->query('pincode'), $summary['subtotal']),
         ]);
+    }
+
+    public function store(CheckoutRequest $request, Cart $cart, PlaceOrder $placeOrder): RedirectResponse
+    {
+        $order = $placeOrder->handle($request->user(), $request->validated(), $cart->quantities());
+        $cart->clear();
+
+        return redirect($order->trackingUrl())->with('order_placed', true);
     }
 
     /**
