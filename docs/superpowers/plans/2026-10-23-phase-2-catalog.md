@@ -2659,14 +2659,12 @@ test('a visible product shows its active variants with effective prices', functi
             ->where('images.1.colour', 'Black'));
 });
 
-test('hidden products are not found', function (Closure $makeProduct) {
-    $product = $makeProduct();
-
+test('hidden products are not found', function (Product $product) {
     $this->get("/products/{$product->slug}")->assertNotFound();
 })->with([
-    'inactive product' => fn () => fn () => Product::factory()->inactive()->has(ProductVariant::factory(), 'variants')->create(),
-    'inactive category' => fn () => fn () => Product::factory()->for(Category::factory()->inactive())->has(ProductVariant::factory(), 'variants')->create(),
-    'no active variants' => fn () => fn () => Product::factory()->create(),
+    'inactive product' => fn () => Product::factory()->inactive()->has(ProductVariant::factory(), 'variants')->create(),
+    'inactive category' => fn () => Product::factory()->for(Category::factory()->inactive())->has(ProductVariant::factory(), 'variants')->create(),
+    'no active variants' => fn () => Product::factory()->create(),
 ]);
 ```
 
