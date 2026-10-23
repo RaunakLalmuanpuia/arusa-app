@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Category;
 use App\Models\Setting;
+use App\Services\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Inertia\Middleware;
@@ -46,6 +47,7 @@ class HandleInertiaRequests extends Middleware
                 ->orderBy('name')
                 ->get(['name', 'slug'])
                 ->toArray(),
+            'cart' => fn (): ?array => $request->routeIs('admin.*') ? null : app(Cart::class)->summary(),
             'flash' => [
                 'status' => fn (): ?string => $request->session()->get('status'),
             ],

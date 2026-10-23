@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
@@ -15,6 +16,10 @@ Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->
 Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/search', SearchController::class)->name('search');
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart', [CartController::class, 'store'])->middleware('throttle:60,1')->name('cart.store');
+Route::patch('/cart/{variant}', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/{variant}', [CartController::class, 'destroy'])->name('cart.destroy');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
