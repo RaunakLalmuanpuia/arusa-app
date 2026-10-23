@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.content-prose h1 { @apply mb-4 text-2xl font-semibold; }
+.content-prose h2 { @apply mb-2 mt-6 text-xl font-semibold; }
+.content-prose p { @apply mb-4 leading-relaxed; }
+.content-prose ul { @apply mb-4 list-disc pl-6; }
+.content-prose a { @apply underline; }
+.content-prose table { @apply mb-4 w-full text-left text-sm; }
+.content-prose th, .content-prose td { @apply border-b py-2 pr-4; }
