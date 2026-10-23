@@ -49,3 +49,14 @@ test('the receipt shows the order number, prices in rupees and the tracking link
         ->assertSeeInHtml('₹1,339')
         ->assertSeeInHtml(e($order->trackingUrl()), false);
 });
+
+test('the receipt table renders one row per line and a bold total', function () {
+    $order = Order::factory()->create(['subtotal' => 129900, 'shipping' => 4000, 'total' => 133900]);
+    OrderItem::factory()->for($order)->create(['unit_price' => 129900, 'quantity' => 1]);
+
+    foreach ([new OrderPlaced($order), new NewOrderReceived($order)] as $mail) {
+        $html = $mail->render();
+
+        expect($html)->not->toContain('**')->toMatch('/<strong[^>]*>₹1,339<\/strong>/');
+    }
+});
