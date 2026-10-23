@@ -1,0 +1,15 @@
+{
+    "enabledPlugins": {
+        "superpowers@superpowers-marketplace": true,
+        "ponytail@ponytail": true,
+        "frontend-design@claude-plugins-official": true,
+        "impeccable@impeccable": true,
+        "codex@openai-codex": true
+    },
+    "extraKnownMarketplaces": {
+        "superpowers-marketplace": { "source": { "source": "github", "repo": "obra/superpowers-marketplace" } },
+        "ponytail": { "source": { "source": "github", "repo": "DietrichGebert/ponytail" } },
+        "impeccable": { "source": { "source": "github", "repo": "pbakaus/impeccable" } },
+        "openai-codex": { "source": { "source": "github", "repo": "openai/codex-plugin-cc" } }
+    }
+}
