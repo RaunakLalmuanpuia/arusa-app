@@ -66,6 +66,14 @@ class ProductController extends Controller
             'product' => $product->only('id', 'name', 'slug', 'category_id', 'description', 'base_price', 'is_active'),
             'variants' => $product->variants->map->only('id', 'size', 'colour', 'sku', 'price_override', 'stock', 'is_active'),
             'categories' => $this->categoryOptions(),
+            'images' => $product->images->map(fn (ProductImage $image): array => [
+                'id' => $image->id,
+                'url' => $image->url(400),
+                'alt' => $image->alt,
+                'colour' => $image->colour,
+                'delete_url' => route('admin.products.images.destroy', [$product, $image]),
+            ]),
+            'colours' => $product->variants->pluck('colour')->filter()->unique()->values(),
         ]);
     }
 

@@ -2,6 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ProductForm from './Partials/ProductForm.vue';
+import ImageUploader from '@/Components/Admin/ImageUploader.vue';
 import VariantGrid from './Partials/VariantGrid.vue';
 import { toPaise } from '@/money';
 
@@ -9,6 +10,8 @@ const props = defineProps({
     product: { type: Object, required: true },
     variants: { type: Array, required: true },
     categories: { type: Array, required: true },
+    images: { type: Array, required: true },
+    colours: { type: Array, required: true },
 });
 
 const form = useForm({ ...props.product, base_price: props.product.base_price / 100 });
@@ -33,6 +36,12 @@ const submit = () => {
         <div class="space-y-8">
             <ProductForm :form="form" :categories="categories" @submit="submit" />
             <VariantGrid :product="product" :variants="variants" />
+            <ImageUploader
+                :images="images"
+                :colours="colours"
+                :upload-url="route('admin.products.images.store', product.id)"
+                :save-url="route('admin.products.images.update', product.id)"
+            />
         </div>
     </AdminLayout>
 </template>

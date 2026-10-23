@@ -15,6 +15,7 @@ class ProductImage extends Model
     /** @use HasFactory<ProductImageFactory> */
     use HasFactory;
 
+    // shortcut: srcset assumes uploads are ≥ 1200 px wide; store real widths if small uploads become common.
     /**
      * Widths each upload is resized to. Files are stored as "{path}-{width}.webp".
      *
