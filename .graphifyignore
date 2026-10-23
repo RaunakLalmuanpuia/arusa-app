@@ -1,0 +1,5 @@
+# AI tooling, not app code
+/.claude/
+/.mcp.json
+/boost.json
+/CLAUDE.md
