@@ -12,8 +12,24 @@ export default {
 
     theme: {
         extend: {
+            colors: {
+                brand: {
+                    50: '#f7f3ec',
+                    100: '#efe8dc',
+                    200: '#ddd2c1',
+                    300: '#c4b6a1',
+                    400: '#a59580',
+                    500: '#867663',
+                    600: '#6b5d4e',
+                    700: '#53483d',
+                    800: '#2e2924',
+                    900: '#151312',
+                },
+                ink: '#121110',
+            },
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                display: ['"Playfair Display"', ...defaultTheme.fontFamily.serif],
             },
         },
     },

@@ -27,3 +27,4 @@ Homestead.yaml
 Thumbs.db
 /graphify-out
 /.claude/settings.local.json
+.playwright-mcp/
