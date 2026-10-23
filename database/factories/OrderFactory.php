@@ -38,4 +38,13 @@ class OrderFactory extends Factory
             'placed_at' => now(),
         ];
     }
+
+    public function razorpay(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'payment_method' => PaymentMethod::Razorpay,
+            'payment_status' => PaymentStatus::AwaitingPayment,
+            'fulfilment_status' => FulfilmentStatus::Pending,
+        ]);
+    }
 }

@@ -27,6 +27,9 @@
         <env name="DB_DATABASE" value="arusa_app_testing"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
+        <env name="RAZORPAY_KEY_ID" value="rzp_test_fake"/>
+        <env name="RAZORPAY_KEY_SECRET" value="test_secret"/>
+        <env name="RAZORPAY_WEBHOOK_SECRET" value="test_webhook_secret"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
