@@ -1,14 +1,81 @@
 <script setup>
-import { Head, usePage } from '@inertiajs/vue3';
+import { onMounted, ref } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import StoreLayout from '@/Layouts/StoreLayout.vue';
 import { formatPaise } from '@/money';
 
-defineProps({
+const props = defineProps({
     order: { type: Object, required: true },
     just_placed: { type: Boolean, required: true },
+    pays_on_delivery: { type: Boolean, required: true },
+    payment: { type: Object, default: null },
+    payment_confirmed: { type: Boolean, required: true },
+    payment_error: { type: String, default: null },
 });
 
 const page = usePage();
+const paymentMessage = ref(props.payment_error);
+const opening = ref(false);
+
+const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700';
+
+/** Razorpay Checkout is loaded only on this page, only when someone pays. */
+const loadCheckout = () =>
+    new Promise((resolve, reject) => {
+        if (window.Razorpay) {
+            resolve();
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Razorpay Checkout could not load.'));
+        document.head.appendChild(script);
+    });
+
+const pay = async () => {
+    opening.value = true;
+    paymentMessage.value = null;
+
+    try {
+        await loadCheckout();
+    } catch {
+        paymentMessage.value = "The payment window couldn't load. Check your connection and try again.";
+        opening.value = false;
+        return;
+    }
+
+    const checkout = new window.Razorpay({
+        key: props.payment.key,
+        amount: props.payment.amount,
+        currency: 'INR',
+        order_id: props.payment.gateway_order_id,
+        name: page.props.store.store_name,
+        description: `Order ${props.order.number}`,
+        prefill: props.payment.prefill,
+        theme: { color: '#121110' },
+        handler: (response) => router.post(props.payment.verify_url, response, { preserveScroll: true }),
+        modal: {
+            ondismiss: () => {
+                opening.value = false;
+                paymentMessage.value ??= 'Payment not completed. Your items stay reserved for 30 minutes.';
+            },
+        },
+    });
+
+    checkout.on('payment.failed', (response) => {
+        paymentMessage.value = response.error?.description ?? 'The payment failed. Please try again.';
+    });
+
+    checkout.open();
+};
+
+onMounted(() => {
+    if (props.payment && props.just_placed) {
+        pay();
+    }
+});
 </script>
 
 <template>
@@ -16,12 +83,39 @@ const page = usePage();
 
     <StoreLayout>
         <div class="mx-auto max-w-2xl px-4 py-8 sm:py-12">
-            <div v-if="just_placed" class="mb-8 border border-brand-300 bg-brand-100 px-4 py-4" role="status">
+            <div v-if="payment_confirmed" class="mb-8 border border-brand-300 bg-brand-100 px-4 py-4" role="status">
+                <p class="font-display text-2xl font-semibold">Payment received. Thank you, {{ order.customer_name }}.</p>
+                <p class="mt-1 text-sm text-brand-700">
+                    Your order is confirmed. We'll call {{ order.customer_phone }} before delivery. Bookmark this page to check on your order.
+                </p>
+            </div>
+            <div v-else-if="just_placed && pays_on_delivery" class="mb-8 border border-brand-300 bg-brand-100 px-4 py-4" role="status">
                 <p class="font-display text-2xl font-semibold">Thank you, {{ order.customer_name }}.</p>
                 <p class="mt-1 text-sm text-brand-700">
                     Your order is confirmed. We'll call {{ order.customer_phone }} before delivery. Bookmark this page to check on your order.
                 </p>
             </div>
+
+            <section v-if="payment" class="mb-8 border border-ink px-4 py-5" aria-labelledby="pay-title">
+                <h2 id="pay-title" class="font-display text-2xl font-semibold">Complete your payment</h2>
+                <p class="mt-1 text-sm text-brand-700">Your items are reserved for 30 minutes. Pay now to confirm the order.</p>
+                <p v-if="paymentMessage" class="mt-3 text-sm text-red-700" role="alert">{{ paymentMessage }}</p>
+                <button
+                    type="button"
+                    class="mt-4 flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 disabled:opacity-40"
+                    :class="focusRing"
+                    :disabled="opening"
+                    @click="pay"
+                >
+                    {{ opening ? 'Opening payment…' : `Pay ${formatPaise(payment.amount)}` }}
+                </button>
+            </section>
+            <p v-else-if="order.fulfilment_status === 'Cancelled' && order.payment_status === 'Failed'" class="mb-8 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status">
+                This order was cancelled because the payment wasn't completed.
+            </p>
+            <p v-else-if="order.fulfilment_status === 'Cancelled' && order.payment_status === 'Refunded'" class="mb-8 border border-brand-300 bg-brand-100 px-4 py-3 text-sm" role="status">
+                This order was cancelled and your payment has been refunded. Refunds reach your account in 5–7 working days.
+            </p>
 
             <p class="text-xs uppercase tracking-[0.3em] text-brand-600">Order</p>
             <h1 class="mt-1 font-display text-3xl font-semibold tabular-nums">{{ order.number }}</h1>
