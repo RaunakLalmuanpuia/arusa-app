@@ -54,7 +54,7 @@ class Razorpay
      */
     public function isValidPaymentSignature(string $gatewayOrderId, string $paymentId, string $signature): bool
     {
-        return $this->verifies(fn (Api $api) => $api->utility->verifyPaymentSignature([
+        return (string) config('services.razorpay.key_secret') !== '' && $this->verifies(fn (Api $api) => $api->utility->verifyPaymentSignature([
             'razorpay_order_id' => $gatewayOrderId,
             'razorpay_payment_id' => $paymentId,
             'razorpay_signature' => $signature,

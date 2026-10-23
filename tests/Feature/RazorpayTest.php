@@ -11,6 +11,10 @@ test('payment signatures are checked against the key secret', function () {
 
     expect($razorpay->isValidPaymentSignature('order_TEST1', 'pay_TEST1', $signature))->toBeTrue()
         ->and($razorpay->isValidPaymentSignature('order_TEST1', 'pay_OTHER', $signature))->toBeFalse();
+
+    config(['services.razorpay.key_secret' => null]);
+
+    expect($razorpay->isValidPaymentSignature('order_TEST1', 'pay_TEST1', hash_hmac('sha256', 'order_TEST1|pay_TEST1', '')))->toBeFalse();
 });
 
 test('webhook signatures are checked against the webhook secret', function () {
