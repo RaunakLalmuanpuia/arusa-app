@@ -9,6 +9,8 @@ use App\Models\ShippingZone;
 use App\Services\Cart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -42,8 +44,18 @@ class CheckoutController extends Controller
 
     public function store(CheckoutRequest $request, Cart $cart, PlaceOrder $placeOrder): RedirectResponse
     {
-        $order = $placeOrder->handle($request->user(), $request->validated(), $cart->lines()->pluck('quantity', 'variant_id')->all());
-        $cart->clear();
+        $lock = Cache::lock('checkout:'.$request->session()->getId(), 10);
+
+        if (! $lock->get()) {
+            throw ValidationException::withMessages(['cart' => 'Your order is already being placed.']);
+        }
+
+        try {
+            $order = $placeOrder->handle($request->user(), $request->validated(), $cart->lines()->pluck('quantity', 'variant_id')->all());
+            $cart->clear();
+        } finally {
+            $lock->release();
+        }
 
         return redirect($order->trackingUrl())->with('order_placed', true);
     }

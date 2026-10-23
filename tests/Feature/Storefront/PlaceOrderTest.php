@@ -9,6 +9,8 @@ use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\ShippingZone;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
@@ -165,4 +167,17 @@ test('the order page needs a valid signature', function () {
             ->where('order.number', $order->number)
             ->where('order.fulfilment_status', 'Confirmed')
             ->where('just_placed', false));
+});
+
+test('a checkout is refused while another one is in flight for the same session', function () {
+    $sessionId = Str::random(40);
+    $lock = Cache::lock('checkout:'.$sessionId, 10);
+    $lock->get();
+
+    $this->withSession(['cart' => [$this->tee->id => 1]])
+        ->withCookie(config('session.cookie'), $sessionId)
+        ->post('/checkout', checkoutPayload())->assertSessionHasErrors(['cart' => 'Your order is already being placed.']);
+
+    expect(Order::count())->toBe(0)->and($this->tee->fresh()->stock)->toBe(5);
+    $lock->release();
 });
