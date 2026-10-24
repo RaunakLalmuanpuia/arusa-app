@@ -26,5 +26,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CatalogSeeder::class);
         $this->call(CategoryImageSeeder::class);
         $this->call(ShippingZoneSeeder::class);
+        $this->call(EdgeCaseSeeder::class);
     }
 }
