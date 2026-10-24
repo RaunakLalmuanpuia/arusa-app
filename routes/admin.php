@@ -21,6 +21,7 @@ Route::middleware(['auth', 'can:access-admin'])
         Route::post('orders/{order}/payments/{payment}/refund', [OrderController::class, 'refund'])
             ->scopeBindings()
             ->name('orders.payments.refund');
+        Route::get('orders/{order}/slip', [OrderController::class, 'slip'])->name('orders.slip');
         Route::resource('pages', PageController::class)->except('show');
         Route::resource('categories', CategoryController::class)->except('show');
         Route::resource('products', ProductController::class)->except('show');

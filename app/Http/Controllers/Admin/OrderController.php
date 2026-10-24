@@ -16,6 +16,7 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Setting;
 use App\Models\ShippingZone;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -156,6 +157,14 @@ class OrderController extends Controller
         }
 
         return back()->with('status', 'Order cancelled.');
+    }
+
+    /**
+     * Packing slip and receipt in one plain page, printed from the browser.
+     */
+    public function slip(Order $order): View
+    {
+        return view('admin.orders.slip', ['order' => $order->load('items'), 'settings' => Setting::values()]);
     }
 
     public function refund(Order $order, Payment $payment, RefundPayment $refundPayment): RedirectResponse
