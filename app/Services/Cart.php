@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -119,7 +118,7 @@ class Cart
         }
 
         $variants = ProductVariant::query()
-            ->with(['product', 'product.images' => fn (HasMany $images) => $images->limit(1)])
+            ->with(['product.images'])
             ->whereKey(array_keys($quantities))
             ->orderBy('id')
             ->get();
@@ -137,7 +136,7 @@ class Cart
                 'slug' => $variant->product->slug,
                 'size' => $variant->size,
                 'colour' => $variant->colour,
-                'image' => $variant->product->images->first()?->toImageData(),
+                'image' => ($variant->product->images->firstWhere('colour', $variant->colour) ?? $variant->product->images->first())?->toImageData(),
                 'unit_price' => $unitPrice,
                 'quantity' => $quantity,
                 'max_quantity' => max(0, min($variant->stock, self::MAX_PER_LINE)),
