@@ -71,6 +71,17 @@ class Product extends Model
     }
 
     /**
+     * Products for a shopper browsing this gender: its own, unisex, and ungendered ones (e.g. a mug).
+     *
+     * @param  Builder<Product>  $query
+     */
+    #[Scope]
+    protected function forGender(Builder $query, Gender $gender): void
+    {
+        $query->where(fn (Builder $q) => $q->whereIn('gender', $gender->matching())->orWhereNull('gender'));
+    }
+
+    /**
      * Eager-load what cardData() needs: active variants and the first two images,
      * with the given colour's images first so a colour-filtered card shows that colour.
      *

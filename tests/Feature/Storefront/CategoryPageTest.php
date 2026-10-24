@@ -73,19 +73,37 @@ test('active top-level categories are shared for the navigation', function () {
         ->where('categories.0.slug', 'apparel'));
 });
 
-test('the gender filter includes unisex products and ignores stock', function () {
+test('the gender filter includes unisex and ungendered products and ignores stock', function () {
     $mens = productWith($this->apparel, ['stock' => 0]);
     $mens->update(['gender' => Gender::Men]);
     $unisex = productWith($this->apparel, []);
     $unisex->update(['gender' => Gender::Unisex]);
     productWith($this->apparel, [])->update(['gender' => Gender::Women]);
-    productWith($this->apparel, []);
+    $ungendered = productWith($this->apparel, []);
 
     $this->get('/categories/apparel?gender=men')
         ->assertInertia(fn ($page) => $page
-            ->has('products', 2)
+            ->has('products', 3)
             ->has('genders', 2)
-            ->where('products', fn ($products) => collect($products)->pluck('slug')->sort()->values()->all() === collect([$mens->slug, $unisex->slug])->sort()->values()->all()));
+            ->where('products', fn ($products) => collect($products)->pluck('slug')->sort()->values()->all() === collect([$mens->slug, $unisex->slug, $ungendered->slug])->sort()->values()->all()));
+});
+
+test('a remembered gender still shows ungendered products where the switch is hidden', function () {
+    productWith($this->apparel, []);
+
+    $this->withCookie('gender', 'men')->get('/categories/apparel')
+        ->assertInertia(fn ($page) => $page->where('genders', [])->has('products', 1));
+});
+
+test('size and colour options only list in-stock variants for the picked gender', function () {
+    productWith($this->apparel, ['size' => 'M', 'colour' => 'Black'], ['size' => 'XL', 'colour' => 'Grey', 'stock' => 0])->update(['gender' => Gender::Men]);
+    productWith($this->apparel, ['size' => 'S', 'colour' => 'Pink'])->update(['gender' => Gender::Women]);
+
+    $this->get('/categories/apparel?gender=men')
+        ->assertInertia(fn ($page) => $page->where('sizes', ['M'])->where('colours', ['Black']));
+
+    $this->get('/categories/apparel?gender=')
+        ->assertInertia(fn ($page) => $page->where('sizes', ['M', 'S'])->where('colours', ['Black', 'Pink']));
 });
 
 test('the gender filter is hidden when no product has a gender', function () {

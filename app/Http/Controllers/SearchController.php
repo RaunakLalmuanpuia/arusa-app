@@ -19,7 +19,7 @@ class SearchController extends Controller
             ? collect()
             : Product::visible()
                 ->whereFullText(['name', 'description'], $query, ['mode' => 'websearch'])
-                ->when($gender, fn ($products, Gender $gender) => $products->whereIn('gender', $gender->matching()))
+                ->when($gender, fn ($products, Gender $gender) => $products->forGender($gender))
                 ->withCardData()
                 ->latest()
                 ->limit(48)

@@ -29,12 +29,13 @@ class CategoryController extends Controller
 
         $subcategories = $category->children()->active()->orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']);
         $categoryIds = $subcategories->pluck('id')->push($category->id);
+        $gender = Gender::tryFrom($filters['gender'] ?? '');
         $isFiltered = collect($filters)->except('gender')->filter(fn ($value) => $value !== null)->isNotEmpty();
 
         // shortcut: no pagination (catalog < ~100 products); add ->paginate() when a category passes ~50.
         $products = Product::visible()
             ->whereIn('category_id', $categoryIds)
-            ->when($filters['gender'] ?? null, fn (Builder $query, string $gender) => $query->whereIn('gender', Gender::from($gender)->matching()))
+            ->when($gender, fn (Builder $query, Gender $gender) => $query->forGender($gender))
             ->when($isFiltered, fn (Builder $query) => $query->whereHas('variants', fn (Builder $variant) => $variant
                 ->where('is_active', true)
                 ->where('stock', '>', 0)
@@ -50,25 +51,27 @@ class CategoryController extends Controller
             'category' => $category->only('name', 'slug'),
             'subcategories' => $subcategories->map->only('name', 'slug'),
             'products' => $products->map(fn (Product $product): array => $product->cardData()),
-            'sizes' => $this->variantValues($categoryIds, 'size'),
-            'colours' => $this->variantValues($categoryIds, 'colour'),
+            'sizes' => $this->variantValues($categoryIds, $gender, 'size'),
+            'colours' => $this->variantValues($categoryIds, $gender, 'colour'),
             'genders' => Product::visible()->whereIn('category_id', $categoryIds)->whereNotNull('gender')->exists() ? Gender::shopperOptions() : [],
             'filters' => $filters,
         ]);
     }
 
     /**
-     * Distinct sizes or colours on sale in these categories, in the order the admin created them.
+     * Distinct in-stock sizes or colours in these categories for the picked gender, in the order the admin created them.
      *
      * @param  Collection<int, int>  $categoryIds
      * @return Collection<int, string>
      */
-    private function variantValues(Collection $categoryIds, string $column): Collection
+    private function variantValues(Collection $categoryIds, ?Gender $gender, string $column): Collection
     {
         return ProductVariant::query()
             ->where('is_active', true)
+            ->where('stock', '>', 0)
             ->whereNotNull($column)
-            ->whereHas('product', fn (Builder $product) => $product->visible()->whereIn('category_id', $categoryIds))
+            ->whereHas('product', fn (Builder $product) => $product->visible()->whereIn('category_id', $categoryIds)
+                ->when($gender, fn (Builder $product, Gender $gender) => $product->forGender($gender)))
             ->groupBy($column)
             ->orderByRaw('min(id)')
             ->pluck($column);

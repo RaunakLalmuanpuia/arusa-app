@@ -37,17 +37,18 @@ test('an empty query shows no results', function () {
     $this->get('/search')->assertOk()->assertInertia(fn ($page) => $page->where('query', '')->has('products', 0));
 });
 
-test('search narrows by gender, keeping unisex products', function () {
+test('search narrows by gender, keeping unisex and ungendered products', function () {
     searchable(['name' => 'Mens Hoodie', 'gender' => Gender::Men]);
     $womens = searchable(['name' => 'Womens Hoodie', 'gender' => Gender::Women]);
     $unisex = searchable(['name' => 'Unisex Hoodie', 'gender' => Gender::Unisex]);
+    $ungendered = searchable(['name' => 'Hoodie Patch', 'gender' => null]);
 
     $this->get('/search?q=hoodie&gender=women')
         ->assertInertia(fn ($page) => $page
             ->where('gender', 'women')
             ->has('genders', 2)
-            ->has('products', 2)
-            ->where('products', fn ($products) => collect($products)->pluck('slug')->sort()->values()->all() === collect([$womens->slug, $unisex->slug])->sort()->values()->all()));
+            ->has('products', 3)
+            ->where('products', fn ($products) => collect($products)->pluck('slug')->sort()->values()->all() === collect([$womens->slug, $unisex->slug, $ungendered->slug])->sort()->values()->all()));
 });
 
 test('search falls back to the remembered gender', function () {
