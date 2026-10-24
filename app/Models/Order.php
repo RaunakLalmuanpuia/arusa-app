@@ -7,6 +7,8 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -61,6 +63,21 @@ class Order extends Model
             'payment_status' => $this->payment_status,
             'user_id' => auth()->id(),
         ]);
+    }
+
+    /**
+     * Orders holding a captured payment that should go back: a cancelled order still paid, or a second capture on one order.
+     *
+     * @param  Builder<Order>  $query
+     */
+    #[Scope]
+    protected function refundOwed(Builder $query): void
+    {
+        $paid = fn (Builder $payment) => $payment->where('status', PaymentStatus::Paid);
+
+        $query->where(fn (Builder $query) => $query
+            ->where(fn (Builder $query) => $query->where('fulfilment_status', FulfilmentStatus::Cancelled)->whereHas('payments', $paid))
+            ->orWhereHas('payments', $paid, '>', 1));
     }
 
     /**

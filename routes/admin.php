@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImageController;
@@ -14,6 +15,7 @@ Route::middleware(['auth', 'can:access-admin'])
     ->name('admin.')
     ->group(function () {
         Route::inertia('/', 'Admin/Dashboard')->name('dashboard');
+        Route::resource('orders', OrderController::class)->only(['index', 'show']);
         Route::resource('pages', PageController::class)->except('show');
         Route::resource('categories', CategoryController::class)->except('show');
         Route::resource('products', ProductController::class)->except('show');
