@@ -38,4 +38,5 @@ test('users can logout', function () {
 
     $this->assertGuest();
     $response->assertRedirect('/');
+    $response->assertSessionHas('inertia.clear_history', true);
 });

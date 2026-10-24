@@ -15,7 +15,12 @@ const unique = (values) => [...new Set(values.filter((value) => value !== null))
 const colours = unique(props.variants.map((variant) => variant.colour));
 const sizes = unique(props.variants.map((variant) => variant.size));
 
-const selectedColour = ref(colours.find((colour) => props.variants.some((v) => v.colour === colour && v.in_stock)) ?? colours[0] ?? null);
+const colourFromUrl = new URLSearchParams(window.location.search).get('colour');
+const selectedColour = ref(
+    colours.includes(colourFromUrl)
+        ? colourFromUrl
+        : colours.find((colour) => props.variants.some((v) => v.colour === colour && v.in_stock)) ?? colours[0] ?? null,
+);
 const selectedSize = ref(sizes.length === 0 ? null : undefined);
 const activeImage = ref(0);
 
@@ -43,6 +48,10 @@ const gallery = computed(() => {
 const selectColour = (colour) => {
     selectedColour.value = colour;
     activeImage.value = 0;
+    // Keeps the pick on back/refresh and in shared links, without a server round trip.
+    const url = new URL(window.location.href);
+    url.searchParams.set('colour', colour);
+    router.replace({ url: url.pathname + url.search, preserveState: true, preserveScroll: true });
     if (selectedSize.value && !isSizeAvailable(selectedSize.value)) {
         selectedSize.value = undefined;
     }
