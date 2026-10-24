@@ -44,7 +44,7 @@ Phone OTP / SMS, attaching guest orders to accounts, listing all orders for a ph
 - When signed in, a line: "Signed in? See all your orders in your account" linking to `route('account')`.
 
 ## 3. "Track order" entry points
-- `StoreLayout.vue` footer: "Track order" link beside the contact links.
+- `StoreLayout.vue` footer: "Track order" link in the footer nav, after the info-page links.
 - `StoreLayout.vue` mobile menu: same link.
 - Header icons are unchanged.
 
