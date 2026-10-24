@@ -130,7 +130,7 @@ test('a status change records the new statuses and who made it', function () {
     $this->actingAs($admin);
     $order->update(['fulfilment_status' => FulfilmentStatus::Packed]);
 
-    $event = $order->events()->latest('id')->first();
+    $event = $order->events->last();
 
     expect($order->events()->count())->toBe(2)
         ->and($event->fulfilment_status)->toBe(FulfilmentStatus::Packed)
@@ -1026,7 +1026,7 @@ test('the admin dispatches a packed order with a tracking note', function () {
 
     expect($order->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Dispatched)
         ->and($order->fresh()->tracking_note)->toBe('Bus parcel')
-        ->and($order->events()->latest('id')->first()->user_id)->toBe($this->admin->id);
+        ->and($order->events->last()->user_id)->toBe($this->admin->id);
 });
 
 test('a skipped step is refused', function () {
