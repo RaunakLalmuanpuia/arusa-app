@@ -24,7 +24,7 @@ const apply = () => {
 
     // An empty gender (All) is sent on purpose: it clears the remembered pick.
     const params = { ...Object.fromEntries(Object.entries(query).filter(([, value]) => value !== null && value !== '')), gender: query.gender ?? '' };
-    router.get(route('categories.show', props.category.slug), params, { preserveState: true, preserveScroll: true, replace: true });
+    router.get(route('categories.show', props.category.slug), params, { preserveState: true, preserveScroll: true });
 };
 
 const toggle = (key, value) => {
