@@ -36,15 +36,15 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
 <template>
     <div>
         <Transition
-            enter-active-class="transition-opacity duration-200 motion-reduce:transition-none"
+            enter-active-class="transition-opacity duration-[250ms] ease-out motion-reduce:transition-none"
             enter-from-class="opacity-0"
-            leave-active-class="transition-opacity duration-150 motion-reduce:transition-none"
+            leave-active-class="transition-opacity duration-200 ease-in motion-reduce:transition-none"
             leave-to-class="opacity-0"
         >
             <div v-if="isCartOpen" class="fixed inset-0 z-40 bg-ink/40" aria-hidden="true" @click="close" />
         </Transition>
         <Transition
-            enter-active-class="transition-transform duration-300 ease-out motion-reduce:transition-none"
+            enter-active-class="transition-transform duration-[250ms] ease-out motion-reduce:transition-none"
             enter-from-class="translate-x-full"
             leave-active-class="transition-transform duration-200 ease-in motion-reduce:transition-none"
             leave-to-class="translate-x-full"

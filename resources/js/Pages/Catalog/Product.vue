@@ -69,7 +69,7 @@ const addToCart = () => {
 
     <StoreLayout>
         <div class="mx-auto grid max-w-6xl gap-8 px-4 py-6 md:grid-cols-2 md:gap-12 md:py-12">
-            <div>
+            <div class="animate-rise-in">
                 <div class="relative aspect-[4/5] overflow-hidden bg-brand-100">
                     <Transition
                         mode="out-in"
@@ -106,7 +106,7 @@ const addToCart = () => {
                 </div>
             </div>
 
-            <div>
+            <div class="animate-rise-in [animation-delay:75ms]">
                 <Link
                     :href="route('categories.show', product.category.slug)"
                     class="text-xs uppercase tracking-[0.3em] text-brand-600 hover:underline focus-ring"

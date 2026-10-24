@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import IconMenu from '@/Components/Icons/IconMenu.vue';
@@ -13,6 +13,16 @@ import { isCartOpen } from '@/cartDrawer';
 
 const page = usePage();
 const isMenuOpen = ref(false);
+const isScrolled = ref(false);
+const updateScrolled = () => {
+    isScrolled.value = window.scrollY > 8;
+};
+
+onMounted(() => {
+    updateScrolled();
+    window.addEventListener('scroll', updateScrolled, { passive: true });
+});
+onBeforeUnmount(() => window.removeEventListener('scroll', updateScrolled));
 
 const infoLinks = [
     { label: 'About', slug: 'about' },
@@ -31,7 +41,10 @@ const infoLinks = [
             Skip to content
         </a>
 
-        <header class="sticky top-0 z-30 bg-brand-900 text-brand-50">
+        <header
+            class="sticky top-0 z-30 bg-brand-900 text-brand-50 transition-shadow duration-200 motion-reduce:transition-none"
+            :class="{ 'shadow-lg shadow-ink/30': isScrolled }"
+        >
             <div class="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center px-2 sm:px-4 md:flex md:justify-between">
                 <button
                     type="button"
