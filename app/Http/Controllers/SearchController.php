@@ -28,7 +28,7 @@ class SearchController extends Controller
         return Inertia::render('Catalog/Search', [
             'query' => $query,
             'gender' => $gender?->value,
-            'genders' => Gender::options(),
+            'genders' => Gender::shopperOptions(),
             'products' => $products->map(fn (Product $product): array => $product->cardData()),
         ]);
     }

@@ -83,7 +83,7 @@ test('the gender filter includes unisex products and ignores stock', function ()
     $this->get('/categories/apparel?gender=men')
         ->assertInertia(fn ($page) => $page
             ->has('products', 2)
-            ->has('genders', 3)
+            ->has('genders', 2)
             ->where('products', fn ($products) => collect($products)->pluck('slug')->sort()->values()->all() === collect([$mens->slug, $unisex->slug])->sort()->values()->all()));
 });
 

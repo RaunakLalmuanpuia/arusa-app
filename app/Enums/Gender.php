@@ -34,4 +34,14 @@ enum Gender: string
     {
         return array_map(fn (self $gender): array => ['value' => $gender->value, 'label' => $gender->label()], self::cases());
     }
+
+    /**
+     * Genders a shopper picks between: unisex items already show under both.
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    public static function shopperOptions(): array
+    {
+        return array_values(array_filter(self::options(), fn (array $option): bool => $option['value'] !== self::Unisex->value));
+    }
 }

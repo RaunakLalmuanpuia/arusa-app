@@ -52,7 +52,7 @@ class CategoryController extends Controller
             'products' => $products->map(fn (Product $product): array => $product->cardData()),
             'sizes' => $this->variantValues($categoryIds, 'size'),
             'colours' => $this->variantValues($categoryIds, 'colour'),
-            'genders' => Product::visible()->whereIn('category_id', $categoryIds)->whereNotNull('gender')->exists() ? Gender::options() : [],
+            'genders' => Product::visible()->whereIn('category_id', $categoryIds)->whereNotNull('gender')->exists() ? Gender::shopperOptions() : [],
             'filters' => $filters,
         ]);
     }
