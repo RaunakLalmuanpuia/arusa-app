@@ -3,6 +3,7 @@ import { computed, watch } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import StoreLayout from '@/Layouts/StoreLayout.vue';
 import InputError from '@/Components/InputError.vue';
+import PageHeading from '@/Components/Store/PageHeading.vue';
 import { formatPaise } from '@/money';
 
 const props = defineProps({
@@ -61,14 +62,14 @@ const variantLabel = (line) => [line.colour, line.size].filter(Boolean).join(' /
     <StoreLayout>
         <div class="mx-auto grid max-w-5xl gap-10 px-4 py-8 sm:py-12 md:grid-cols-[1fr_20rem]">
             <form class="space-y-6" novalidate @submit.prevent="submit">
-                <h1 class="font-display text-3xl font-semibold sm:text-4xl">Checkout</h1>
+                <PageHeading title="Checkout" />
 
                 <p v-if="form.errors.cart" class="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
                     {{ form.errors.cart }} <Link :href="route('cart.index')" class="underline">Review your bag</Link>
                 </p>
 
                 <fieldset class="space-y-4">
-                    <legend class="font-display text-xl font-semibold">Contact</legend>
+                    <legend class="font-display text-xl font-semibold"><span class="mr-3 text-brand-500 tabular-nums" aria-hidden="true">01</span>Contact</legend>
                     <div>
                         <label class="store-label" for="name">Full name</label>
                         <input class="store-field" id="name" v-model="form.name" autocomplete="name" required />
@@ -87,7 +88,7 @@ const variantLabel = (line) => [line.colour, line.size].filter(Boolean).join(' /
                 </fieldset>
 
                 <fieldset class="space-y-4">
-                    <legend class="font-display text-xl font-semibold">Delivery address</legend>
+                    <legend class="font-display text-xl font-semibold"><span class="mr-3 text-brand-500 tabular-nums" aria-hidden="true">02</span>Delivery address</legend>
                     <div>
                         <label class="store-label" for="line1">House, building, street</label>
                         <input class="store-field" id="line1" v-model="form.line1" autocomplete="address-line1" required />
@@ -117,7 +118,7 @@ const variantLabel = (line) => [line.colour, line.size].filter(Boolean).join(' /
                 </fieldset>
 
                 <fieldset class="space-y-3">
-                    <legend class="font-display text-xl font-semibold">Payment</legend>
+                    <legend class="font-display text-xl font-semibold"><span class="mr-3 text-brand-500 tabular-nums" aria-hidden="true">03</span>Payment</legend>
                     <label class="flex min-h-11 items-center gap-3 border border-brand-300 px-4" :class="{ 'opacity-50': liveQuote?.deliverable && !liveQuote.cod_available }">
                         <input v-model="form.payment_method" type="radio" value="cod" class="text-ink focus:ring-ink" :disabled="liveQuote?.deliverable && !liveQuote.cod_available" />
                         <span>Cash on delivery</span>
@@ -139,14 +140,22 @@ const variantLabel = (line) => [line.colour, line.size].filter(Boolean).join(' /
                 >
                     {{ buttonLabel }}
                 </button>
+                <p class="text-center text-xs text-brand-600">
+                    <template v-if="!(liveQuote?.deliverable && !liveQuote.cod_available)">Cash on delivery · </template><template v-if="online_payment">Secure online payment · </template>Delivered across Mizoram
+                </p>
             </form>
 
-            <aside class="h-fit border border-brand-200 p-4 md:sticky md:top-20" aria-labelledby="summary-title">
+            <aside class="h-fit border border-brand-200 p-4 md:sticky md:top-24" aria-labelledby="summary-title">
                 <h2 id="summary-title" class="text-xs font-medium uppercase tracking-[0.2em]">Order summary</h2>
                 <ul class="mt-4 space-y-3 text-sm">
-                    <li v-for="line in page.props.cart.lines" :key="line.variant_id" class="flex justify-between gap-4">
-                        <span>{{ line.name }}<span v-if="variantLabel(line)" class="text-brand-600"> · {{ variantLabel(line) }}</span> × {{ line.quantity }}</span>
-                        <span class="tabular-nums">{{ formatPaise(line.line_total) }}</span>
+                    <li v-for="line in page.props.cart.lines" :key="line.variant_id" class="flex gap-3">
+                        <div class="h-[60px] w-12 shrink-0 overflow-hidden bg-brand-100">
+                            <img v-if="line.image" :src="line.image.src" :srcset="line.image.srcset" sizes="48px" alt="" loading="lazy" class="h-full w-full object-cover" />
+                        </div>
+                        <div class="flex flex-1 justify-between gap-4">
+                            <span>{{ line.name }}<span v-if="variantLabel(line)" class="text-brand-600"> · {{ variantLabel(line) }}</span> × {{ line.quantity }}</span>
+                            <span class="tabular-nums">{{ formatPaise(line.line_total) }}</span>
+                        </div>
                     </li>
                 </ul>
                 <dl class="mt-4 space-y-1 border-t border-brand-200 pt-4 text-sm">

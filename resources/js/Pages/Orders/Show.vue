@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import StoreLayout from '@/Layouts/StoreLayout.vue';
+import PageHeading from '@/Components/Store/PageHeading.vue';
+import Reveal from '@/Components/Store/Reveal.vue';
 import { formatPaise } from '@/money';
 
 const props = defineProps({
@@ -106,13 +108,13 @@ onMounted(() => {
                 </p>
             </div>
 
-            <section v-if="payment" class="mb-8 border border-ink px-4 py-5" aria-labelledby="pay-title">
+            <section v-if="payment" class="mb-8 bg-brand-900 p-6 text-brand-50" aria-labelledby="pay-title">
                 <h2 id="pay-title" class="font-display text-2xl font-semibold">Complete your payment</h2>
-                <p class="mt-1 text-sm text-brand-700">Your items are reserved for 30 minutes. Pay now to confirm the order.</p>
-                <p v-if="paymentMessage" class="mt-3 text-sm text-red-700" role="alert">{{ paymentMessage }}</p>
+                <p class="mt-1 text-sm text-brand-200">Your items are reserved for 30 minutes. Pay now to confirm the order.</p>
+                <p v-if="paymentMessage" class="mt-3 text-sm text-red-300" role="alert">{{ paymentMessage }}</p>
                 <button
                     type="button"
-                    class="mt-4 flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 disabled:opacity-40 focus-ring"
+                    class="mt-4 flex min-h-12 w-full items-center justify-center bg-brand-50 text-xs font-medium uppercase tracking-[0.2em] text-ink disabled:opacity-40 focus-ring-inverse"
                     :disabled="opening"
                     @click="pay"
                 >
@@ -129,9 +131,8 @@ onMounted(() => {
                 This order was cancelled and your payment has been refunded. Refunds reach your account in 5–7 working days.
             </p>
 
-            <p class="text-xs uppercase tracking-[0.3em] text-brand-600">Order</p>
-            <h1 class="mt-1 font-display text-3xl font-semibold tabular-nums">{{ order.number }}</h1>
-            <p class="mt-1 text-sm text-brand-700">Placed {{ order.placed_at }}</p>
+            <PageHeading eyebrow="Order" :title="order.number" class="tabular-nums" />
+            <p class="mt-3 text-sm text-brand-700">Placed {{ order.placed_at }}</p>
 
             <dl class="mt-6 grid grid-cols-2 gap-4 border-y border-brand-200 py-4 text-sm">
                 <div>
@@ -150,12 +151,23 @@ onMounted(() => {
 
             <div v-if="timeline.length" class="mt-6 text-sm">
                 <h2 class="text-xs uppercase tracking-[0.2em] text-brand-600">Progress</h2>
-                <ol class="mt-3 space-y-3 border-l border-brand-300 pl-4">
-                    <li v-for="(step, index) in timeline" :key="index" class="relative">
-                        <span class="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full" :class="index === timeline.length - 1 ? 'bg-ink' : 'bg-brand-300'" aria-hidden="true" />
+                <ol class="mt-3 space-y-4 border-l border-brand-300 pl-4">
+                    <Reveal
+                        v-for="(step, index) in timeline"
+                        :key="index"
+                        as="li"
+                        :delay="Math.min(index, 4) * 75"
+                        class="relative"
+                        :aria-current="index === timeline.length - 1 ? 'step' : undefined"
+                    >
+                        <span
+                            class="absolute -left-[21.5px] top-[5px] h-2.5 w-2.5 rounded-full"
+                            :class="index === timeline.length - 1 ? 'bg-ink ring-4 ring-brand-200' : 'bg-brand-400'"
+                            aria-hidden="true"
+                        />
                         <p :class="index === timeline.length - 1 ? 'font-medium' : 'text-brand-700'">{{ step.status }}</p>
                         <p class="text-xs text-brand-600">{{ step.at }}</p>
-                    </li>
+                    </Reveal>
                 </ol>
             </div>
 

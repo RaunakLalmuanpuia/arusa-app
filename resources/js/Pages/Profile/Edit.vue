@@ -1,4 +1,5 @@
 <script setup>
+import PageHeading from '@/Components/Store/PageHeading.vue';
 import StoreLayout from '@/Layouts/StoreLayout.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
@@ -21,12 +22,12 @@ defineProps({
     <StoreLayout>
         <div class="mx-auto max-w-3xl px-4 py-8 sm:py-12">
             <Link :href="route('account')" class="store-link">← Your account</Link>
-            <h1 class="mt-4 font-display text-3xl font-semibold sm:text-4xl">Profile & password</h1>
+            <PageHeading eyebrow="Your account" title="Profile & password" class="mt-4" />
 
-            <div class="mt-10 max-w-xl divide-y divide-brand-200">
-                <UpdateProfileInformationForm :must-verify-email="mustVerifyEmail" :status="status" class="pb-10" />
-                <UpdatePasswordForm class="py-10" />
-                <DeleteUserForm class="pt-10" />
+            <div class="mt-10 max-w-xl space-y-8">
+                <UpdateProfileInformationForm :must-verify-email="mustVerifyEmail" :status="status" class="border border-brand-200 p-6 sm:p-8" />
+                <UpdatePasswordForm class="border border-brand-200 p-6 sm:p-8" />
+                <DeleteUserForm class="border border-red-200 p-6 sm:p-8" />
             </div>
         </div>
     </StoreLayout>
