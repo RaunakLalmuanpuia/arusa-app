@@ -85,5 +85,10 @@ const submit = () => {
                 </button>
             </div>
         </form>
+
+        <p class="mt-10 border-t border-brand-200 pt-6 text-sm text-brand-700">
+            New to {{ $page.props.store.store_name }}?
+            <Link :href="route('register')" class="store-link">Create an account</Link>
+        </p>
     </GuestLayout>
 </template>
