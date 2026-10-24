@@ -83,7 +83,7 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
             </template>
 
             <div v-else class="mt-12 flex flex-col items-center text-center">
-                <ApplicationLogo class="h-16 w-16" />
+                <ApplicationLogo alt="" class="h-16 w-16" />
                 <p class="mt-6 text-brand-700">Your bag is empty.</p>
                 <Link :href="route('home') + '#new-in'" class="store-link mt-4 inline-flex min-h-11 items-center">Shop new in</Link>
             </div>

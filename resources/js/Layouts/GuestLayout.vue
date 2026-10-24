@@ -22,7 +22,7 @@ defineProps({
                 <div class="absolute inset-0 -z-10 bg-gradient-to-t from-brand-900 via-brand-900/60 to-brand-900/20" aria-hidden="true" />
 
                 <div class="flex flex-col items-center text-center">
-                    <ApplicationLogo on-dark sizes="112px" class="h-20 w-20 animate-rise-in lg:h-28 lg:w-28" />
+                    <ApplicationLogo on-dark sizes="112px" alt="" class="h-20 w-20 animate-rise-in lg:h-28 lg:w-28" />
                     <p class="mt-6 hidden animate-rise-in font-display text-5xl font-semibold uppercase tracking-[0.12em] [animation-delay:150ms] lg:block">
                         {{ $page.props.store.store_name }}
                     </p>

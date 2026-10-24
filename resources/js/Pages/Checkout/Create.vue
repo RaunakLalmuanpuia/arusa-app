@@ -141,7 +141,7 @@ const variantLabel = (line) => [line.colour, line.size].filter(Boolean).join(' /
                     {{ buttonLabel }}
                 </button>
                 <p class="text-center text-xs text-brand-600">
-                    Cash on delivery<template v-if="online_payment"> · Secure online payment</template> · Delivered across Mizoram
+                    <template v-if="!(liveQuote?.deliverable && !liveQuote.cod_available)">Cash on delivery · </template><template v-if="online_payment">Secure online payment · </template>Delivered across Mizoram
                 </p>
             </form>
 
