@@ -18,3 +18,19 @@
     .store-button { @apply inline-flex min-h-12 items-center justify-center bg-ink px-8 text-xs font-medium uppercase tracking-[0.2em] text-brand-50 transition-opacity duration-150 disabled:opacity-40 motion-reduce:transition-none focus-ring; }
     .store-link { @apply text-sm underline underline-offset-4 focus-ring; }
 }
+
+/* Storefront motion. Opacity/transform only; all switched off under reduced motion. */
+.reveal { opacity: 0; transform: translateY(12px); transition: opacity 300ms ease-out, transform 300ms ease-out; }
+.reveal.is-revealed { opacity: 1; transform: none; }
+.animate-rise-in { animation: rise-in 300ms ease-out both; }
+.animate-rule-draw { animation: rule-draw 300ms ease-out both; }
+.animate-marquee { animation: marquee 40s linear infinite; }
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes rule-draw { from { transform: scaleX(0); } }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .animate-rise-in, .animate-rule-draw, .animate-marquee { animation: none; }
+}

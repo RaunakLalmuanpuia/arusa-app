@@ -69,7 +69,7 @@ class Product extends Model
     }
 
     /**
-     * Eager-load what cardData() needs: active variants and the first image.
+     * Eager-load what cardData() needs: active variants and the first two images.
      *
      * @param  Builder<Product>  $query
      */
@@ -78,14 +78,14 @@ class Product extends Model
     {
         $query->with([
             'variants' => fn (HasMany $variants) => $variants->where('is_active', true),
-            'images' => fn (HasMany $images) => $images->limit(1),
+            'images' => fn (HasMany $images) => $images->limit(2),
         ]);
     }
 
     /**
      * Listing card props. Requires the withCardData() scope.
      *
-     * @return array{name: string, slug: string, price_from: int, has_price_range: bool, in_stock: bool, image: array{src: string, srcset: string, alt: string}|null}
+     * @return array{name: string, slug: string, price_from: int, has_price_range: bool, in_stock: bool, image: array{src: string, srcset: string, alt: string}|null, hover_image: array{src: string, srcset: string, alt: string}|null}
      */
     public function cardData(): array
     {
@@ -98,6 +98,7 @@ class Product extends Model
             'has_price_range' => $prices->unique()->count() > 1,
             'in_stock' => $this->variants->contains(fn (ProductVariant $variant): bool => $variant->stock > 0),
             'image' => $this->images->first()?->toImageData(),
+            'hover_image' => $this->images->get(1)?->toImageData(),
         ];
     }
 }

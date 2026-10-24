@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\User;
 
@@ -52,6 +53,20 @@ test('the cart page shows live prices and totals from the server', function () {
             ->where('cart.subtotal', 159800)
             ->where('cart.lines.0.unit_price', 79900)
             ->where('cart.lines.0.available', true));
+});
+
+test('each cart line shows the photo for its colour, falling back to the first photo', function () {
+    $product = Product::factory()->create();
+    ProductImage::factory()->for($product)->create(['colour' => 'Black', 'alt' => 'black photo', 'sort_order' => 1]);
+    ProductImage::factory()->for($product)->create(['colour' => 'Cream', 'alt' => 'cream photo', 'sort_order' => 2]);
+    $cream = ProductVariant::factory()->for($product)->create(['colour' => 'Cream']);
+    $grey = ProductVariant::factory()->for($product)->create(['colour' => 'Grey']);
+
+    $this->withSession(['cart' => [$cream->id => 1, $grey->id => 1]])
+        ->get('/cart')
+        ->assertInertia(fn ($page) => $page
+            ->where('cart.lines.0.image.alt', 'cream photo')
+            ->where('cart.lines.1.image.alt', 'black photo'));
 });
 
 test('a line that became unavailable is flagged and left out of the totals', function () {
