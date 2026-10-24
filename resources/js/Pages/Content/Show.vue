@@ -39,7 +39,7 @@ const components = {
             <template v-for="(block, index) in blocks" :key="index">
                 <HeroBlock v-if="index === 0 && block.type === 'hero'" :data="block.data" />
                 <Reveal v-else class="mt-14 sm:mt-20">
-                    <component :is="components[block.type]" :data="block.data" />
+                    <component :is="components[block.type]" :data="block.data" v-bind="block.type === 'hero' ? { headingLevel: 'h2' } : {}" />
                 </Reveal>
             </template>
         </div>

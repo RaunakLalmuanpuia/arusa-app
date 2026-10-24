@@ -17,8 +17,14 @@ const uploadError = ref(null);
 const xsrfToken = () => decodeURIComponent(document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/)?.[1] ?? '');
 
 const onFile = async (event) => {
+    const file = event.target.files[0];
+
+    if (!file) {
+        return;
+    }
+
     const body = new FormData();
-    body.append('image', event.target.files[0]);
+    body.append('image', file);
     uploading.value = true;
     uploadError.value = null;
 
@@ -28,15 +34,23 @@ const onFile = async (event) => {
             body,
             headers: { Accept: 'application/json', 'X-XSRF-TOKEN': xsrfToken() },
         });
-        const json = await response.json();
+        const isJson = response.headers.get('content-type')?.includes('json');
 
-        if (response.ok) {
-            path.value = json.path;
+        if (response.status === 419) {
+            uploadError.value = 'Your session expired. Reload the page and try again.';
+        } else if (!isJson) {
+            uploadError.value = `Upload failed (HTTP ${response.status}).`;
         } else {
-            uploadError.value = json.errors?.image?.[0] ?? json.message ?? 'Upload failed.';
+            const json = await response.json();
+
+            if (response.ok) {
+                path.value = json.path;
+            } else {
+                uploadError.value = json.errors?.image?.[0] ?? json.message ?? `Upload failed (HTTP ${response.status}).`;
+            }
         }
     } catch {
-        uploadError.value = 'Upload failed. Check the file is under 8 MB and try again.';
+        uploadError.value = 'Upload failed. Check your connection and try again.';
     } finally {
         uploading.value = false;
         event.target.value = '';
@@ -49,7 +63,7 @@ const onFile = async (event) => {
         <p class="text-sm font-medium text-gray-700">{{ label }}</p>
         <div class="mt-1 flex flex-wrap items-center gap-3">
             <img v-if="path" :src="`${imageBaseUrl}${path}-800.webp`" alt="" class="h-20 w-20 rounded object-cover" />
-            <label class="inline-flex cursor-pointer items-center rounded border border-gray-300 px-3 py-2 text-sm">
+            <label class="inline-flex cursor-pointer items-center rounded border border-gray-300 px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2">
                 {{ uploading ? 'Uploading…' : path ? 'Replace image' : 'Upload image' }}
                 <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" :disabled="uploading" @change="onFile" />
             </label>

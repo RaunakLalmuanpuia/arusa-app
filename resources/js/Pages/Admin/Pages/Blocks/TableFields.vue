@@ -13,8 +13,7 @@ const error = (field) => props.errors[`${props.prefix}.${field}`];
 
 // Cell errors have many keys; list them together under the table.
 const tableErrors = computed(() => Object.entries(props.errors)
-    .filter(([key]) => key.startsWith(`${props.prefix}.columns`) || key.startsWith(`${props.prefix}.rows`))
-    .map(([, message]) => message));
+    .filter(([key]) => key.startsWith(`${props.prefix}.columns`) || key.startsWith(`${props.prefix}.rows`)));
 
 const addColumn = () => {
     props.data.columns.push('');
@@ -60,7 +59,7 @@ const addRow = () => props.data.rows.push(props.data.columns.map(() => ''));
             <button type="button" :class="smallButton" :disabled="data.rows.length >= 30" @click="addRow">Add row</button>
         </div>
         <ul v-if="tableErrors.length" class="text-sm text-red-600">
-            <li v-for="message in tableErrors" :key="message">{{ message }}</li>
+            <li v-for="[key, message] in tableErrors" :key="key">{{ message }}</li>
         </ul>
         <Field :id="`${prefix}.note`" v-model="data.note" label="Note under the table (optional)" :error="error('note')" />
     </div>

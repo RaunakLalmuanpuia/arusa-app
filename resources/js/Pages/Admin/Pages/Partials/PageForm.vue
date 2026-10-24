@@ -21,11 +21,13 @@ const newType = ref('text');
 const move = (index, offset) => {
     const [block] = props.form.blocks.splice(index, 1);
     props.form.blocks.splice(index + offset, 0, block);
+    props.form.clearErrors();
 };
 
 const remove = (index) => {
     if (window.confirm(`Remove this ${blockTypes[props.form.blocks[index].type].label} block?`)) {
         props.form.blocks.splice(index, 1);
+        props.form.clearErrors();
     }
 };
 

@@ -1,6 +1,7 @@
 <script setup>
 defineProps({
     data: { type: Object, required: true },
+    headingLevel: { type: String, default: 'h1', validator: (value) => ['h1', 'h2'].includes(value) },
 });
 </script>
 
@@ -17,7 +18,7 @@ defineProps({
 
         <div class="mx-auto flex min-h-[16rem] max-w-3xl flex-col justify-end px-4 pb-10 pt-24 sm:min-h-[22rem] sm:pb-14">
             <p v-if="data.eyebrow" class="animate-rise-in text-xs uppercase tracking-[0.3em] text-brand-200">{{ data.eyebrow }}</p>
-            <h1 class="mt-2 animate-rise-in font-display text-3xl font-semibold text-brand-50 [animation-delay:75ms] sm:text-5xl">{{ data.heading }}</h1>
+            <component :is="headingLevel" class="mt-2 animate-rise-in font-display text-3xl font-semibold text-brand-50 [animation-delay:75ms] sm:text-5xl">{{ data.heading }}</component>
             <p v-if="data.intro" class="mt-4 max-w-xl animate-rise-in text-base leading-relaxed text-brand-100 [animation-delay:150ms] sm:text-lg">{{ data.intro }}</p>
         </div>
     </section>

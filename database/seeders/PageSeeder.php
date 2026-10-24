@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Actions\StoreWebpImage;
 use App\Models\Page;
+use App\Models\Setting;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -15,7 +16,7 @@ class PageSeeder extends Seeder
     /**
      * Create the content pages, or fill ones still holding placeholder text. Pages edited in the admin are left alone.
      *
-     * Placeholders to confirm in the admin before launch: contact numbers and email, the size chart, the returns window.
+     * Contact details come from Settings. Placeholders to confirm in the admin before launch: the size chart, the 7-day returns window, the founding year, and the delivery-time and product-quality claims.
      */
     public function run(): void
     {
@@ -87,6 +88,18 @@ class PageSeeder extends Seeder
      */
     private function contactBlocks(): array
     {
+        $settings = Setting::values();
+        $phone = fn (?string $value): bool => is_string($value) && preg_match('/^[6-9]\d{9}$/', $value) === 1;
+        $email = filter_var($settings['contact_email'], FILTER_VALIDATE_EMAIL) !== false;
+
+        $cards = array_values(array_filter([
+            $phone($settings['whatsapp_number']) ? ['kind' => 'whatsapp', 'label' => 'WhatsApp', 'value' => $settings['whatsapp_number']] : null,
+            $phone($settings['contact_phone']) ? ['kind' => 'phone', 'label' => 'Call us', 'value' => $settings['contact_phone']] : null,
+            $email ? ['kind' => 'email', 'label' => 'Email', 'value' => $settings['contact_email']] : null,
+            ['kind' => 'address', 'label' => 'Based in', 'value' => 'Aizawl, Mizoram'],
+            ['kind' => 'hours', 'label' => 'Hours', 'value' => 'Monday to Saturday, 10am – 6pm'],
+        ]));
+
         return [
             ['type' => 'hero', 'data' => [
                 'eyebrow' => 'Contact',
@@ -95,13 +108,7 @@ class PageSeeder extends Seeder
             ]],
             ['type' => 'contact_cards', 'data' => [
                 'heading' => 'Get in touch',
-                'items' => [
-                    ['kind' => 'whatsapp', 'label' => 'WhatsApp', 'value' => '9000000000'],
-                    ['kind' => 'phone', 'label' => 'Call us', 'value' => '9000000000'],
-                    ['kind' => 'email', 'label' => 'Email', 'value' => 'hello@example.com'],
-                    ['kind' => 'address', 'label' => 'Based in', 'value' => 'Aizawl, Mizoram'],
-                    ['kind' => 'hours', 'label' => 'Hours', 'value' => 'Monday to Saturday, 10am – 6pm'],
-                ],
+                'items' => $cards,
             ]],
             ['type' => 'faq', 'data' => [
                 'heading' => 'Order help',
