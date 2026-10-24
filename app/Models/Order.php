@@ -42,6 +42,28 @@ class Order extends Model
     }
 
     /**
+     * Every status change lands on the timeline, whichever action made it.
+     */
+    protected static function booted(): void
+    {
+        static::created(fn (Order $order) => $order->recordEvent());
+        static::updated(function (Order $order): void {
+            if ($order->wasChanged(['fulfilment_status', 'payment_status'])) {
+                $order->recordEvent();
+            }
+        });
+    }
+
+    private function recordEvent(): void
+    {
+        $this->events()->create([
+            'fulfilment_status' => $this->fulfilment_status,
+            'payment_status' => $this->payment_status,
+            'user_id' => auth()->id(),
+        ]);
+    }
+
+    /**
      * Customer-facing order number, derived from the id: ARU-000123.
      *
      * @return Attribute<string, never>
@@ -67,6 +89,16 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class)->orderBy('id');
+    }
+
+    /**
+     * Status timeline, oldest first.
+     *
+     * @return HasMany<OrderEvent, $this>
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(OrderEvent::class)->orderBy('id');
     }
 
     /**
