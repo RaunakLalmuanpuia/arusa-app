@@ -16,7 +16,7 @@ Make the browse path feel like the reference board — dark, editorial, premium 
 - **Pages in scope:** `StoreLayout`, `Home`, `Catalog/Category`, `Catalog/Product`, `Catalog/Search`, `CartDrawer`, `ProductCard`.
 
 ### Out of scope
-Inertia page-to-page transitions (StoreLayout is per-page, would need a persistent-layout refactor), category images in the backend, checkout / cart page / account / auth / content pages, product spec tables (would be false for non-tee products).
+Bag-icon pulse (the cart drawer opens over the header on add, so it would never be seen), Inertia page-to-page transitions (StoreLayout is per-page, would need a persistent-layout refactor), category images in the backend, checkout / cart page / account / auth / content pages, product spec tables (would be false for non-tee products).
 
 ## 2. Images
 
@@ -38,10 +38,9 @@ Inertia page-to-page transitions (StoreLayout is per-page, would need a persiste
 
 ### Keyframes / utilities (`resources/css/app.css`)
 - `reveal` / `is-revealed`: 300 ms ease-out opacity + transform.
-- `animate-hero-in`: fade + rise, used with staggered `animation-delay` on hero badge, wordmark, subtitle.
+- `animate-rise-in`: fade + rise, used with staggered `animation-delay` on hero badge, wordmark, subtitle and the product page columns.
 - `animate-rule-draw`: `scaleX(0 → 1)` from the inner edge for the hero rule lines.
 - `animate-marquee`: infinite `translateX(0 → -50%)`, ~30 s linear.
-- `animate-bag-pulse`: 300 ms scale 1 → 1.15 → 1.
 - All wrapped so `@media (prefers-reduced-motion: reduce)` disables animations and transitions and stops the marquee.
 
 ## 4. Home (`resources/js/Pages/Home.vue`)
@@ -55,10 +54,11 @@ Top to bottom:
 
 ## 5. Other browse pages
 
-- **`ProductCard`** — wrapped in `Reveal` with delay `(index % 4) * 75` ms (index passed from `ProductGrid`). If the product has a second image, it crossfades in on hover (desktop only, `@media (hover: hover)`). Sold-out badge restyled to match the board's small-caps labels.
+- **`ProductGrid`** — each `<li>` becomes `<Reveal as="li">` with delay `(index % 4) * 75` ms.
+- **`ProductCard`** — If the product has a second image, it crossfades in on hover (desktop only, `@media (hover: hover)`). Sold-out badge restyled to match the board's small-caps labels.
 - **Backend for hover image:** `Product::withCardData()` loads the first two images instead of one; `cardData()` adds `hover_image` (second image's `toImageData()` or `null`). Existing card-data tests updated.
-- **`Catalog/Product`** — info column children reveal staggered on load; existing image crossfade kept.
-- **`StoreLayout`** — bag icon plays `animate-bag-pulse` when `page.props.cart.count` increases (watcher, class removed on `animationend`); header gains a soft shadow once `scrollY > 8` (passive scroll listener).
+- **`Catalog/Product`** — gallery then info column rise in (0 / 75 ms) on load; existing image crossfade kept.
+- **`StoreLayout`** — header gains a soft shadow once `scrollY > 8` (passive scroll listener).
 - **`CartDrawer`** — tune slide/backdrop timing to 250 ms enter / 200 ms leave, ease-out/ease-in.
 - **`Catalog/Category`, `Catalog/Search`** — inherit card changes; no layout change.
 
