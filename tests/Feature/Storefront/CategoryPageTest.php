@@ -92,3 +92,17 @@ test('the gender filter is hidden when no product has a gender', function () {
 
     $this->get('/categories/apparel')->assertInertia(fn ($page) => $page->where('genders', []));
 });
+
+test('a picked gender is remembered for later visits until all is picked', function () {
+    productWith($this->apparel, [])->update(['gender' => Gender::Men]);
+    productWith($this->apparel, [])->update(['gender' => Gender::Women]);
+
+    $this->get('/categories/apparel?gender=men')->assertCookie('gender', 'men');
+
+    $this->withCookie('gender', 'men')->get('/categories/apparel')
+        ->assertInertia(fn ($page) => $page->where('filters.gender', 'men')->has('products', 1));
+
+    $this->withCookie('gender', 'men')->get('/categories/apparel?gender=')
+        ->assertCookieExpired('gender')
+        ->assertInertia(fn ($page) => $page->where('filters.gender', null)->has('products', 2));
+});

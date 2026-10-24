@@ -18,7 +18,8 @@ const props = defineProps({
 const query = reactive({ gender: null, size: null, colour: null, min: null, max: null, ...props.filters });
 
 const apply = () => {
-    const params = Object.fromEntries(Object.entries(query).filter(([, value]) => value !== null && value !== ''));
+    // An empty gender (All) is sent on purpose: it clears the remembered pick.
+    const params = { ...Object.fromEntries(Object.entries(query).filter(([, value]) => value !== null && value !== '')), gender: query.gender ?? '' };
     router.get(route('categories.show', props.category.slug), params, { preserveState: true, preserveScroll: true, replace: true });
 };
 
@@ -51,7 +52,7 @@ const chip = 'min-h-11 border px-3 text-sm transition-colors duration-150 focus-
                 <Link
                     v-for="sub in subcategories"
                     :key="sub.slug"
-                    :href="route('categories.show', { category: sub.slug, ...(filters.gender && { gender: filters.gender }) })"
+                    :href="route('categories.show', sub.slug)"
                     class="text-xs uppercase tracking-[0.2em] text-brand-600 underline-offset-4 hover:underline"
                 >
                     {{ sub.name }}

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import IconMenu from '@/Components/Icons/IconMenu.vue';
@@ -13,10 +13,6 @@ import { isCartOpen } from '@/cartDrawer';
 
 const page = usePage();
 const isMenuOpen = ref(false);
-
-// The shopper's Men/Women pick rides along the nav links so every category opens already narrowed.
-const gender = computed(() => new URLSearchParams(page.url.split('?')[1]).get('gender'));
-const categoryHref = (slug) => route('categories.show', { category: slug, ...(gender.value && { gender: gender.value }) });
 const isScrolled = ref(false);
 const updateScrolled = () => {
     isScrolled.value = window.scrollY > 8;
@@ -73,7 +69,7 @@ const infoLinks = [
                     <Link
                         v-for="category in page.props.categories"
                         :key="category.slug"
-                        :href="categoryHref(category.slug)"
+                        :href="route('categories.show', category.slug)"
                         class="rounded py-2 text-xs font-medium uppercase tracking-[0.2em] text-brand-200 transition-colors duration-200 hover:text-brand-50 focus-ring-inverse"
                     >
                         {{ category.name }}
@@ -89,7 +85,7 @@ const infoLinks = [
                         Admin
                     </Link>
                     <Link
-                        :href="route('search', gender ? { gender } : {})"
+                        :href="route('search')"
                         class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200 focus-ring-inverse"
                         aria-label="Search"
                     >
@@ -135,7 +131,7 @@ const infoLinks = [
                     <Link
                         v-for="category in page.props.categories"
                         :key="category.slug"
-                        :href="categoryHref(category.slug)"
+                        :href="route('categories.show', category.slug)"
                         class="flex min-h-11 items-center border-b border-brand-800 text-sm font-medium uppercase tracking-[0.2em] focus-ring-inverse"
                         @click="isMenuOpen = false"
                     >

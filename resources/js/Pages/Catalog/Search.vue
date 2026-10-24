@@ -14,7 +14,7 @@ const props = defineProps({
 
 const term = ref(props.query);
 
-const search = (gender) => router.get(route('search'), { q: term.value, ...(gender && { gender }) }, { preserveState: true, replace: true });
+const search = (gender) => router.get(route('search'), { q: term.value, gender: gender ?? '' }, { preserveState: true, replace: true });
 
 const submit = () => search(props.gender);
 </script>

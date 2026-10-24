@@ -14,14 +14,15 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RazorpayWebhookController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TrackOrderController;
+use App\Http\Middleware\RememberGender;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
-Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
+Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->middleware(RememberGender::class)->name('categories.show');
 
 Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
-Route::get('/search', SearchController::class)->name('search');
+Route::get('/search', SearchController::class)->middleware(RememberGender::class)->name('search');
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'store'])->middleware('throttle:60,1')->name('cart.store');
 Route::patch('/cart/{variant}', [CartController::class, 'update'])->name('cart.update');

@@ -49,3 +49,11 @@ test('search narrows by gender, keeping unisex products', function () {
             ->has('products', 2)
             ->where('products', fn ($products) => collect($products)->pluck('slug')->sort()->values()->all() === collect([$womens->slug, $unisex->slug])->sort()->values()->all()));
 });
+
+test('search falls back to the remembered gender', function () {
+    searchable(['name' => 'Mens Hoodie', 'gender' => Gender::Men]);
+    searchable(['name' => 'Womens Hoodie', 'gender' => Gender::Women]);
+
+    $this->withCookie('gender', 'women')->get('/search?q=hoodie')
+        ->assertInertia(fn ($page) => $page->where('gender', 'women')->has('products', 1));
+});
