@@ -1,14 +1,30 @@
 <script setup>
+import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import BarChart from '@/Components/Admin/BarChart.vue';
+import StatusBadge from '@/Components/Admin/StatusBadge.vue';
+import IconChevronDown from '@/Components/Icons/IconChevronDown.vue';
 import { formatPaise } from '@/money';
 
-defineProps({
+const props = defineProps({
     today: { type: Object, required: true },
     needs_action: { type: Array, required: true },
     low_stock: { type: Array, required: true },
     revenue: { type: Object, required: true },
 });
+
+const now = new Date();
+const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+const todayLabel = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+
+const isRefundOwed = (item) => item.filters.status === 'refund_owed' && item.count > 0;
+
+const kpis = computed(() => [
+    { label: 'Orders today', value: props.today.count },
+    { label: 'Received, last 7 days', value: formatPaise(props.revenue.last_7_days) },
+    { label: 'Received, last 30 days', value: formatPaise(props.revenue.last_30_days) },
+]);
 </script>
 
 <template>
@@ -16,74 +32,81 @@ defineProps({
 
     <AdminLayout>
         <template #header>
-            <h1 class="text-xl font-semibold text-gray-900">Dashboard</h1>
+            <p class="text-sm text-brand-500">{{ todayLabel }}</p>
+            <h1 class="mt-1 font-display text-3xl font-semibold tracking-tight text-ink">{{ greeting }}</h1>
         </template>
 
-        <div class="space-y-6">
-            <section class="grid grid-cols-2 gap-4 lg:grid-cols-5">
-                <Link
-                    v-for="item in needs_action"
-                    :key="item.label"
-                    :href="route('admin.orders.index', item.filters)"
-                    class="rounded bg-white p-4 shadow-sm hover:bg-gray-50"
-                >
-                    <span class="block text-sm text-gray-500">{{ item.label }}</span>
-                    <span class="text-2xl font-semibold" :class="item.filters.status === 'refund_owed' && item.count ? 'text-red-700' : 'text-gray-900'">{{ item.count }}</span>
-                </Link>
+        <div class="space-y-8">
+            <section aria-labelledby="needs-action">
+                <h2 id="needs-action" class="mb-3 text-sm font-medium text-brand-600">Needs action</h2>
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                    <Link
+                        v-for="item in needs_action"
+                        :key="item.label"
+                        :href="route('admin.orders.index', item.filters)"
+                        class="admin-card focus-ring group relative flex flex-col gap-1 overflow-hidden p-4 transition-colors duration-150 hover:border-brand-400 motion-reduce:transition-none"
+                    >
+                        <span v-if="isRefundOwed(item)" class="absolute inset-y-0 left-0 w-1 bg-red-600" aria-hidden="true" />
+                        <span class="text-2xl font-semibold tabular-nums" :class="item.count === 0 ? 'text-brand-300' : isRefundOwed(item) ? 'text-red-700' : 'text-ink'">{{ item.count }}</span>
+                        <span class="flex items-center justify-between gap-2 text-sm text-brand-600">
+                            {{ item.label }}
+                            <IconChevronDown class="h-4 w-4 shrink-0 -rotate-90 text-brand-400 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                        </span>
+                    </Link>
+                </div>
             </section>
 
-            <section class="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                <div class="rounded bg-white p-4 shadow-sm">
-                    <span class="block text-sm text-gray-500">Orders today</span>
-                    <span class="text-2xl font-semibold text-gray-900">{{ today.count }}</span>
+            <section class="grid gap-3 sm:grid-cols-3">
+                <div v-for="kpi in kpis" :key="kpi.label" class="admin-card p-5">
+                    <p class="text-sm text-brand-600">{{ kpi.label }}</p>
+                    <p class="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{{ kpi.value }}</p>
                 </div>
-                <div class="rounded bg-white p-4 shadow-sm">
-                    <span class="block text-sm text-gray-500">Received, last 7 days</span>
-                    <span class="text-2xl font-semibold text-gray-900">{{ formatPaise(revenue.last_7_days) }}</span>
+            </section>
+
+            <section class="admin-card p-5">
+                <div class="mb-5 flex items-baseline justify-between gap-3">
+                    <h2 class="font-medium">Received, last 30 days</h2>
+                    <span class="text-sm tabular-nums text-brand-500">{{ formatPaise(revenue.last_30_days) }}</span>
                 </div>
-                <div class="rounded bg-white p-4 shadow-sm">
-                    <span class="block text-sm text-gray-500">Received, last 30 days</span>
-                    <span class="text-2xl font-semibold text-gray-900">{{ formatPaise(revenue.last_30_days) }}</span>
-                </div>
+                <BarChart :points="revenue.daily" :format="formatPaise" />
             </section>
 
             <div class="grid gap-6 lg:grid-cols-2">
-                <section class="overflow-x-auto rounded bg-white shadow-sm">
-                    <h2 class="border-b px-4 py-3 font-medium text-gray-900">Today's orders</h2>
-                    <table class="w-full text-left text-sm">
-                        <tbody>
-                            <tr v-for="order in today.orders" :key="order.id" class="border-b last:border-0">
-                                <td class="px-4 py-2">
-                                    <Link :href="route('admin.orders.show', order.id)" class="font-medium hover:underline">{{ order.number }}</Link>
-                                </td>
-                                <td class="px-4 py-2">{{ order.customer }}</td>
-                                <td class="px-4 py-2">{{ formatPaise(order.total) }}</td>
-                                <td class="px-4 py-2 text-gray-600">{{ order.status }}</td>
-                            </tr>
-                            <tr v-if="today.orders.length === 0">
-                                <td class="px-4 py-6 text-center text-gray-500">No orders yet today.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <section class="admin-card">
+                    <h2 class="border-b border-brand-200 px-5 py-4 font-medium">Today's orders</h2>
+                    <ul v-if="today.orders.length" class="divide-y divide-brand-100">
+                        <li v-for="order in today.orders" :key="order.id">
+                            <Link :href="route('admin.orders.show', order.id)" class="focus-ring flex items-center gap-3 px-5 py-3 text-sm transition-colors duration-150 hover:bg-brand-50/60 motion-reduce:transition-none">
+                                <span class="shrink-0 font-medium">{{ order.number }}</span>
+                                <span class="min-w-0 flex-1 truncate text-brand-700">{{ order.customer }}</span>
+                                <span class="tabular-nums">{{ formatPaise(order.total) }}</span>
+                                <StatusBadge :value="order.status_value" :label="order.status" />
+                            </Link>
+                        </li>
+                    </ul>
+                    <p v-else class="px-5 py-10 text-center text-sm text-brand-500">No orders yet today.</p>
                 </section>
 
-                <section class="overflow-x-auto rounded bg-white shadow-sm">
-                    <h2 class="border-b px-4 py-3 font-medium text-gray-900">Low stock (3 or fewer)</h2>
-                    <table class="w-full text-left text-sm">
-                        <tbody>
-                            <tr v-for="variant in low_stock" :key="variant.id" class="border-b last:border-0">
-                                <td class="px-4 py-2">
-                                    <Link :href="route('admin.products.edit', variant.product_id)" class="font-medium hover:underline">{{ variant.name }}</Link>
-                                    <span v-if="variant.variant" class="block text-xs text-gray-500">{{ variant.variant }}</span>
-                                </td>
-                                <td class="px-4 py-2 font-mono text-xs">{{ variant.sku }}</td>
-                                <td class="px-4 py-2 font-medium" :class="variant.stock === 0 ? 'text-red-700' : 'text-gray-900'">{{ variant.stock }}</td>
-                            </tr>
-                            <tr v-if="low_stock.length === 0">
-                                <td class="px-4 py-6 text-center text-gray-500">Everything is well stocked.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <section class="admin-card">
+                    <h2 class="border-b border-brand-200 px-5 py-4 font-medium">Low stock (3 or fewer)</h2>
+                    <ul v-if="low_stock.length" class="divide-y divide-brand-100">
+                        <li v-for="variant in low_stock" :key="variant.id">
+                            <Link :href="route('admin.products.edit', variant.product_id)" class="focus-ring flex items-center gap-3 px-5 py-3 text-sm transition-colors duration-150 hover:bg-brand-50/60 motion-reduce:transition-none">
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate font-medium">{{ variant.name }}</span>
+                                    <span v-if="variant.variant" class="block text-xs text-brand-500">{{ variant.variant }}</span>
+                                </span>
+                                <span class="hidden font-mono text-xs text-brand-500 sm:inline">{{ variant.sku }}</span>
+                                <span
+                                    class="whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
+                                    :class="variant.stock === 0 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'"
+                                >
+                                    {{ variant.stock === 0 ? 'Sold out' : `${variant.stock} left` }}
+                                </span>
+                            </Link>
+                        </li>
+                    </ul>
+                    <p v-else class="px-5 py-10 text-center text-sm text-brand-500">Everything is well stocked.</p>
                 </section>
             </div>
         </div>
