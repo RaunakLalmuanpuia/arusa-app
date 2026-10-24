@@ -13,6 +13,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RazorpayWebhookController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TrackOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -29,6 +30,8 @@ Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.c
 Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware('signed')->name('orders.show');
 Route::post('/orders/{order}/payment', [OrderPaymentController::class, 'store'])->middleware(['signed', 'throttle:10,1'])->name('orders.payment.store');
+Route::get('/track', [TrackOrderController::class, 'create'])->name('orders.track');
+Route::post('/track', [TrackOrderController::class, 'store'])->middleware('throttle:5,1')->name('orders.track.store');
 Route::post('/webhooks/razorpay', RazorpayWebhookController::class)->name('webhooks.razorpay');
 
 Route::redirect('/dashboard', '/account')->name('dashboard');
