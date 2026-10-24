@@ -172,6 +172,7 @@ const infoLinks = [
         <footer class="bg-brand-900 text-brand-100">
             <div class="mx-auto grid max-w-6xl gap-10 px-4 py-12 text-sm sm:grid-cols-2">
                 <div>
+                    <ApplicationLogo on-dark alt="" class="mb-4 h-16 w-16" />
                     <p class="font-display text-lg font-semibold uppercase tracking-[0.2em] text-brand-50">
                         {{ page.props.store.store_name }}
                     </p>
