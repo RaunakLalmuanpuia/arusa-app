@@ -14,11 +14,14 @@ class SearchController extends Controller
     {
         $query = $request->string('q')->trim()->limit(100, '')->value();
         $gender = $request->enum('gender', Gender::class);
+        preg_match_all('/[\p{L}\p{N}]+/u', $query, $words);
+        // Every word must match the start of a stemmed word, so "hood" finds "Hoodie" and "hoodies" still does.
+        $prefixQuery = implode(' & ', array_map(fn (string $word): string => $word.':*', $words[0]));
 
-        $products = $query === ''
+        $products = $prefixQuery === ''
             ? collect()
             : Product::visible()
-                ->whereFullText(['name', 'description'], $query, ['mode' => 'websearch'])
+                ->whereRaw("(to_tsvector('english', name) || to_tsvector('english', description)) @@ to_tsquery('english', ?)", [$prefixQuery])
                 ->when($gender, fn ($products, Gender $gender) => $products->forGender($gender))
                 ->withCardData()
                 ->latest()

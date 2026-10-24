@@ -25,6 +25,27 @@ test('search matches stemmed words in the name and description', function () {
         ->assertInertia(fn ($page) => $page->has('products', 1)->where('products.0.slug', $tee->slug));
 });
 
+test('search matches the start of a word', function () {
+    $hoodie = searchable(['name' => 'Wolf Hoodie', 'description' => 'Fleece lined.']);
+    searchable(['name' => 'Logo Tee', 'description' => 'Printed with puff ink on heavy cotton.']);
+
+    $this->get('/search?q=hood')
+        ->assertInertia(fn ($page) => $page->has('products', 1)->where('products.0.slug', $hoodie->slug));
+
+    $this->get('/search?q=wol flee')
+        ->assertInertia(fn ($page) => $page->has('products', 1)->where('products.0.slug', $hoodie->slug));
+});
+
+test('search treats punctuation as plain text', function () {
+    $tee = searchable(['name' => 'Logo T-Shirt']);
+
+    $this->get("/search?q=t-shirt's ! & | :* (")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('products', 1)->where('products.0.slug', $tee->slug));
+
+    $this->get('/search?q=!!!')->assertOk()->assertInertia(fn ($page) => $page->has('products', 0));
+});
+
 test('search skips hidden products', function () {
     Product::factory()->inactive()->has(ProductVariant::factory(), 'variants')->create(['name' => 'Secret Hoodie']);
 
