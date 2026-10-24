@@ -17,6 +17,13 @@
     .store-field { @apply mt-1 block min-h-11 w-full border-brand-300 bg-transparent focus:border-ink focus:ring-ink; }
     .store-button { @apply inline-flex min-h-12 items-center justify-center bg-ink px-8 text-xs font-medium uppercase tracking-[0.2em] text-brand-50 transition-opacity duration-150 disabled:opacity-40 motion-reduce:transition-none focus-ring; }
     .store-link { @apply text-sm underline underline-offset-4 focus-ring; }
+    .admin-card { @apply rounded-xl border border-brand-200 bg-white; }
+    .admin-label { @apply block text-sm font-medium text-ink; }
+    .admin-field { @apply block w-full rounded-lg border-brand-300 bg-white text-sm text-ink placeholder:text-brand-400 focus:border-ink focus:ring-ink disabled:bg-brand-50; }
+    .admin-checkbox { @apply h-4 w-4 rounded border-brand-300 text-ink focus:ring-ink; }
+    .admin-btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-brand-50 transition-colors duration-150 hover:bg-brand-800 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none focus-ring; }
+    .admin-btn-secondary { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-brand-300 bg-white px-4 text-sm font-medium text-ink transition-colors duration-150 hover:bg-brand-50 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none focus-ring; }
+    .admin-btn-danger { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium text-red-700 transition-colors duration-150 hover:bg-red-50 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none focus-ring; }
 }
 
 /* Storefront motion. Opacity/transform only; all switched off under reduced motion. */

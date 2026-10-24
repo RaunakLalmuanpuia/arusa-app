@@ -27,6 +27,7 @@ class DashboardController extends Controller
                     'customer' => $order->customer_name,
                     'total' => $order->total,
                     'status' => $order->fulfilment_status->label(),
+                    'status_value' => $order->fulfilment_status->value,
                 ]),
             ],
             'needs_action' => [
@@ -59,6 +60,7 @@ class DashboardController extends Controller
             'revenue' => [
                 'last_7_days' => $this->revenueSince(6),
                 'last_30_days' => $this->revenueSince(29),
+                'daily' => $this->dailyRevenue(30),
             ],
         ]);
     }
@@ -72,5 +74,32 @@ class DashboardController extends Controller
             ->where('fulfilment_status', '!=', FulfilmentStatus::Cancelled)
             ->where('placed_at', '>=', today()->subDays($days))
             ->sum('total');
+    }
+
+    /**
+     * Money received per day for the last $days days, oldest first, with empty days as zero.
+     *
+     * @return list<array{date: string, label: string, value: int}>
+     */
+    private function dailyRevenue(int $days): array
+    {
+        $totals = Order::where('payment_status', PaymentStatus::Paid)
+            ->where('fulfilment_status', '!=', FulfilmentStatus::Cancelled)
+            ->where('placed_at', '>=', today()->subDays($days - 1))
+            ->selectRaw('DATE(placed_at) as day, SUM(total) as total')
+            ->groupBy('day')
+            ->pluck('total', 'day');
+
+        return collect(range($days - 1, 0))
+            ->map(function (int $daysAgo) use ($totals): array {
+                $day = today()->subDays($daysAgo);
+
+                return [
+                    'date' => $day->format('Y-m-d'),
+                    'label' => $day->format('j M'),
+                    'value' => (int) ($totals[$day->format('Y-m-d')] ?? 0),
+                ];
+            })
+            ->all();
     }
 }

@@ -2,6 +2,8 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import AdminTable from '@/Components/Admin/AdminTable.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
+import StatusBadge from '@/Components/Admin/StatusBadge.vue';
 import { formatPaise } from '@/money';
 
 defineProps({
@@ -17,12 +19,12 @@ const columns = [
     { key: 'placed_at', label: 'Placed' },
     { key: 'customer', label: 'Customer' },
     { key: 'zone', label: 'Zone' },
-    { key: 'total', label: 'Total' },
+    { key: 'total', label: 'Total', align: 'right' },
     { key: 'payment', label: 'Payment' },
     { key: 'status', label: 'Status' },
 ];
 
-const fieldClass = 'rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500';
+const fieldClass = 'admin-field md:w-auto';
 </script>
 
 <template>
@@ -30,12 +32,9 @@ const fieldClass = 'rounded-md border-gray-300 text-sm shadow-sm focus:border-in
 
     <AdminLayout>
         <template #header>
-            <h1 class="text-xl font-semibold text-gray-900">Orders</h1>
+            <PageHeader title="Orders" />
         </template>
 
-        <p v-for="(message, key) in $page.props.errors" :key="key" class="mb-4 rounded bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">
-            {{ message }}
-        </p>
         <AdminTable :rows="orders" :columns="columns" :filters="filters">
             <template #filters="{ query }">
                 <select v-model="query.status" aria-label="Status" :class="fieldClass">
@@ -50,23 +49,37 @@ const fieldClass = 'rounded-md border-gray-300 text-sm shadow-sm focus:border-in
                     <option :value="null">All zones</option>
                     <option v-for="zone in zones" :key="zone.id" :value="zone.id">{{ zone.name }}</option>
                 </select>
-                <label class="text-sm text-gray-600">
+                <label class="flex items-center gap-2 text-sm text-brand-600">
                     From
-                    <input v-model="query.from" type="date" :class="fieldClass" />
+                    <input v-model="query.from" type="date" class="admin-field w-auto" />
                 </label>
-                <label class="text-sm text-gray-600">
+                <label class="flex items-center gap-2 text-sm text-brand-600">
                     To
-                    <input v-model="query.to" type="date" :class="fieldClass" />
+                    <input v-model="query.to" type="date" class="admin-field w-auto" />
                 </label>
             </template>
             <template #cell-number="{ row }">
-                <Link :href="route('admin.orders.show', row.id)" class="font-medium text-gray-900 hover:underline">{{ row.number }}</Link>
+                <Link :href="route('admin.orders.show', row.id)" class="focus-ring rounded font-medium text-ink hover:underline">{{ row.number }}</Link>
+            </template>
+            <template #cell-placed_at="{ row }">
+                <span class="whitespace-nowrap text-brand-700">{{ row.placed_at }}</span>
             </template>
             <template #cell-customer="{ row }">
                 {{ row.customer }}
-                <span class="block text-xs text-gray-500">{{ row.phone }}</span>
+                <span class="block text-xs text-brand-500">{{ row.phone }}</span>
             </template>
-            <template #cell-total="{ row }">{{ formatPaise(row.total) }}</template>
+            <template #cell-total="{ row }">
+                <span class="tabular-nums">{{ formatPaise(row.total) }}</span>
+            </template>
+            <template #cell-payment="{ row }">
+                <span class="flex flex-wrap items-center gap-2">
+                    <span class="text-brand-700">{{ row.payment_method_label }}</span>
+                    <StatusBadge :value="row.payment_status_value" :label="row.payment_status_label" />
+                </span>
+            </template>
+            <template #cell-status="{ row }">
+                <StatusBadge :value="row.status_value" :label="row.status" />
+            </template>
             <template #empty>No orders match.</template>
         </AdminTable>
     </AdminLayout>

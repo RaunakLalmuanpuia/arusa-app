@@ -2,6 +2,9 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import AdminTable from '@/Components/Admin/AdminTable.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
+import StatusBadge from '@/Components/Admin/StatusBadge.vue';
+import IconPlus from '@/Components/Icons/IconPlus.vue';
 
 defineProps({
     categories: { type: Object, required: true },
@@ -29,24 +32,26 @@ const deleteCategory = (category) => {
 
     <AdminLayout>
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="text-xl font-semibold text-gray-900">Categories</h1>
-                <Link :href="route('admin.categories.create')" class="rounded bg-gray-800 px-3 py-2 text-sm font-medium text-white">New category</Link>
-            </div>
+            <PageHeader title="Categories">
+                <template #actions>
+                    <Link :href="route('admin.categories.create')" class="admin-btn">
+                        <IconPlus class="h-4 w-4" />
+                        New category
+                    </Link>
+                </template>
+            </PageHeader>
         </template>
-
-        <p v-if="$page.props.errors.category" class="mb-4 rounded bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">
-            {{ $page.props.errors.category }}
-        </p>
 
         <AdminTable :rows="categories" :columns="columns" :filters="filters">
             <template #cell-name="{ row }">
-                <Link :href="route('admin.categories.edit', row.id)" class="font-medium text-gray-900 hover:underline">{{ row.name }}</Link>
+                <Link :href="route('admin.categories.edit', row.id)" class="focus-ring rounded font-medium text-ink hover:underline">{{ row.name }}</Link>
             </template>
             <template #cell-parent="{ row }">{{ row.parent ?? '—' }}</template>
-            <template #cell-is_active="{ row }">{{ row.is_active ? 'Yes' : 'No' }}</template>
+            <template #cell-is_active="{ row }">
+                <StatusBadge :value="row.is_active ? 'active' : 'inactive'" :label="row.is_active ? 'Visible' : 'Hidden'" />
+            </template>
             <template #cell-actions="{ row }">
-                <button type="button" class="text-red-600 hover:underline" @click="deleteCategory(row)">Delete</button>
+                <button type="button" class="admin-btn-danger min-h-8 px-3" @click="deleteCategory(row)">Delete</button>
             </template>
             <template #empty>No categories yet.</template>
         </AdminTable>

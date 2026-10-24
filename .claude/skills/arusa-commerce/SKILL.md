@@ -25,7 +25,7 @@ Spec: `docs/superpowers/specs/2026-10-23-arusa-ecommerce-design.md`. Plans: `doc
 
 ## Admin
 - Routes in `routes/admin.php`, behind `auth` + `can:access-admin`. Pages in `resources/js/Pages/Admin/`, layout `AdminLayout.vue`.
-- Plain and functional. Reuse shared admin components; no design-skill passes, no decorative motion.
+- Brand-tied, modern workspace (spec: `docs/superpowers/specs/2026-10-24-admin-ui-redesign-design.md`). Reuse `Components/Admin/*` and the `.admin-*` classes in `app.css`; no Breeze components in admin. Same motion rules as the storefront.
 - `is_admin` is never mass-assignable. Grant with `php artisan admin:grant {email}`.
 
 ## Storefront design

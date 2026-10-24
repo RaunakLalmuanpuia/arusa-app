@@ -1,8 +1,8 @@
-export const fieldClass = 'block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500';
+export const fieldClass = 'admin-field';
 
-export const smallButton = 'rounded border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-40';
+export const smallButton = 'admin-btn-secondary min-h-8 px-3';
 
-export const removeButton = 'text-sm text-red-600 hover:underline disabled:opacity-40 disabled:no-underline';
+export const removeButton = 'admin-btn-danger min-h-8 px-2';
 
 // Must match PageBlockType::ICONS.
 export const featureIcons = [

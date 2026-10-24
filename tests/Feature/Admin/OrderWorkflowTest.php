@@ -208,3 +208,16 @@ test('an already refunded payment cannot be refunded again', function () {
         ->post(route('admin.orders.payments.refund', [$order, $order->payments()->first()]))
         ->assertSessionHasErrors('payment');
 });
+
+test('the detail page carries status values for badges', function () {
+    $order = paidOnlineOrder();
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.orders.show', $order))
+        ->assertInertia(fn ($page) => $page
+            ->where('order.fulfilment_status_value', 'confirmed')
+            ->where('order.payment_status_value', 'paid')
+            ->where('payments.0.status_value', 'paid')
+            ->has('events.0.fulfilment_status_value')
+            ->has('events.0.payment_status_value'));
+});

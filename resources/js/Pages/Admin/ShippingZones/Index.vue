@@ -2,6 +2,9 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import AdminTable from '@/Components/Admin/AdminTable.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
+import StatusBadge from '@/Components/Admin/StatusBadge.vue';
+import IconPlus from '@/Components/Icons/IconPlus.vue';
 import { formatPaise } from '@/money';
 
 defineProps({
@@ -31,26 +34,32 @@ const deleteZone = (zone) => {
 
     <AdminLayout>
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="text-xl font-semibold text-gray-900">Shipping zones</h1>
-                <Link :href="route('admin.shipping-zones.create')" class="rounded bg-gray-800 px-3 py-2 text-sm font-medium text-white">New zone</Link>
-            </div>
+            <PageHeader title="Shipping zones">
+                <template #actions>
+                    <Link :href="route('admin.shipping-zones.create')" class="admin-btn">
+                        <IconPlus class="h-4 w-4" />
+                        New zone
+                    </Link>
+                </template>
+            </PageHeader>
         </template>
-
-        <p v-if="$page.props.errors.zone" class="mb-4 rounded bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">
-            {{ $page.props.errors.zone }}
-        </p>
 
         <AdminTable :rows="zones" :columns="columns" :filters="filters">
             <template #cell-name="{ row }">
-                <Link :href="route('admin.shipping-zones.edit', row.id)" class="font-medium text-gray-900 hover:underline">{{ row.name }}</Link>
+                <Link :href="route('admin.shipping-zones.edit', row.id)" class="focus-ring rounded font-medium text-ink hover:underline">{{ row.name }}</Link>
             </template>
-            <template #cell-rate="{ row }">{{ formatPaise(row.rate) }}</template>
-            <template #cell-free_above="{ row }">{{ row.free_above === null ? '—' : formatPaise(row.free_above) }}</template>
+            <template #cell-rate="{ row }">
+                <span class="tabular-nums">{{ formatPaise(row.rate) }}</span>
+            </template>
+            <template #cell-free_above="{ row }">
+                <span class="tabular-nums">{{ row.free_above === null ? '—' : formatPaise(row.free_above) }}</span>
+            </template>
             <template #cell-cod_allowed="{ row }">{{ row.cod_allowed ? 'Yes' : 'No' }}</template>
-            <template #cell-is_active="{ row }">{{ row.is_active ? 'Yes' : 'No' }}</template>
+            <template #cell-is_active="{ row }">
+                <StatusBadge :value="row.is_active ? 'active' : 'inactive'" :label="row.is_active ? 'Active' : 'Off'" />
+            </template>
             <template #cell-actions="{ row }">
-                <button type="button" class="text-red-600 hover:underline" @click="deleteZone(row)">Delete</button>
+                <button type="button" class="admin-btn-danger min-h-8 px-3" @click="deleteZone(row)">Delete</button>
             </template>
             <template #empty>No zones yet. Without a zone nobody can check out.</template>
         </AdminTable>

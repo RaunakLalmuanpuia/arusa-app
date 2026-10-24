@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
 import PageForm from './Partials/PageForm.vue';
 import { newBlock, withoutUids } from './Blocks/blockTypes.js';
 
@@ -16,7 +17,7 @@ const form = useForm({ title: '', slug: '', blocks: [newBlock('hero')] });
 
     <AdminLayout>
         <template #header>
-            <h1 class="text-xl font-semibold text-gray-900">New page</h1>
+            <PageHeader title="New page" :back="{ label: 'Pages', href: route('admin.pages.index') }" />
         </template>
 
         <PageForm :form="form" :image-base-url="imageBaseUrl" @submit="form.transform(withoutUids).post(route('admin.pages.store'))" />
