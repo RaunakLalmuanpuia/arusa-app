@@ -59,40 +59,39 @@ enum PageBlockType: string
             ],
             self::Features => [
                 "{$data}.heading" => $heading,
-                "{$data}.items" => ['required', 'array', 'min:2', 'max:4'],
+                "{$data}.items" => ['required', 'list', 'min:2', 'max:4'],
                 "{$data}.items.*.icon" => ['required', Rule::in(self::ICONS)],
                 "{$data}.items.*.title" => ['required', 'string', 'max:60'],
                 "{$data}.items.*.text" => ['required', 'string', 'max:200'],
             ],
             self::Table => [
                 "{$data}.heading" => $heading,
-                "{$data}.columns" => ['required', 'array', 'min:2', 'max:6'],
+                "{$data}.columns" => ['required', 'list', 'min:2', 'max:6'],
                 "{$data}.columns.*" => ['required', 'string', 'max:60'],
-                "{$data}.rows" => ['required', 'array', 'min:1', 'max:30'],
-                "{$data}.rows.*" => ['required', 'array', 'size:'.count((array) ($input['columns'] ?? []))],
+                "{$data}.rows" => ['required', 'list', 'min:1', 'max:30'],
+                "{$data}.rows.*" => ['required', 'list', 'size:'.count((array) ($input['columns'] ?? []))],
                 "{$data}.rows.*.*" => ['nullable', 'string', 'max:60'],
                 "{$data}.note" => ['nullable', 'string', 'max:300'],
             ],
             self::Faq => [
                 "{$data}.heading" => $heading,
-                "{$data}.items" => ['required', 'array', 'min:1', 'max:20'],
+                "{$data}.items" => ['required', 'list', 'min:1', 'max:20'],
                 "{$data}.items.*.question" => ['required', 'string', 'max:200'],
                 "{$data}.items.*.answer" => ['required', 'string', 'max:2000'],
             ],
             self::ContactCards => [
                 "{$data}.heading" => $heading,
-                "{$data}.items" => ['required', 'array', 'min:1', 'max:6'],
+                "{$data}.items" => ['required', 'list', 'min:1', 'max:6'],
                 "{$data}.items.*.kind" => ['required', Rule::in(self::CONTACT_KINDS)],
                 "{$data}.items.*.label" => ['required', 'string', 'max:60'],
-                "{$data}.items.*.value" => ['required', 'string', 'max:200'],
-                ...self::contactValueRules($data, $input['items'] ?? []),
+                "{$data}.items.*.value" => ['required', 'string', 'max:200', self::contactValueRule($input)],
             ],
             self::CallToAction => [
                 "{$data}.heading" => ['required', 'string', 'max:120'],
                 "{$data}.text" => ['nullable', 'string', 'max:300'],
                 "{$data}.button_label" => ['required', 'string', 'max:40'],
-                // A site path ("/x", not "//host") or an https URL.
-                "{$data}.button_url" => ['required', 'string', 'max:300', 'regex:#^(/(?!/)|https://)#'],
+                // A site path ("/x", not "//host") or an https URL; no backslashes or whitespace, which browsers treat as slashes.
+                "{$data}.button_url" => ['required', 'string', 'max:300', 'regex:#^(/(?![/\\\\])|https://)[^\s\\\\]*$#'],
             ],
         };
     }
@@ -119,18 +118,19 @@ enum PageBlockType: string
     /**
      * Phone and WhatsApp values are 10-digit Indian mobiles; email values are emails.
      *
-     * @return array<string, list<string>>
+     * @param  array<string, mixed>  $input  The block's submitted data.
      */
-    private static function contactValueRules(string $data, mixed $items): array
+    private static function contactValueRule(array $input): Closure
     {
-        return collect(is_array($items) ? $items : [])
-            ->mapWithKeys(fn (mixed $item, int|string $index): array => [
-                "{$data}.items.{$index}.value" => match (is_array($item) ? ($item['kind'] ?? null) : null) {
-                    'phone', 'whatsapp' => ['regex:/^[6-9]\d{9}$/'],
-                    'email' => ['email'],
-                    default => [],
-                },
-            ])
-            ->all();
+        return function (string $attribute, mixed $value, Closure $fail) use ($input): void {
+            preg_match('/\.items\.(\d+)\.value$/', $attribute, $match);
+            $kind = $input['items'][$match[1] ?? '']['kind'] ?? null;
+
+            if (in_array($kind, ['phone', 'whatsapp'], true) && ! preg_match('/^[6-9]\d{9}$/', (string) $value)) {
+                $fail('The :attribute must be a 10-digit mobile number.');
+            } elseif ($kind === 'email' && ! filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                $fail('The :attribute must be a valid email address.');
+            }
+        };
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Models\Page;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -57,7 +58,46 @@ test('a page with every block type saves and keeps only known fields', function 
         ->assertSessionHasNoErrors()
         ->assertRedirect('/admin/pages');
 
-    expect(Page::firstWhere('slug', 'about')->blocks)->toEqual($blocks);
+    $stored = Page::firstWhere('slug', 'about')->blocks;
+
+    expect(array_is_list($stored))->toBeTrue()
+        ->and(collect($stored)->pluck('type')->all())->toBe(collect($blocks)->pluck('type')->all())
+        ->and($stored)->toEqual($blocks);
+});
+
+test('blocks and their nested lists are stored as JSON arrays, in order', function () {
+    $valid = validBlocks($this->image);
+    $blocks = [$valid['table'], $valid['features'], $valid['contact_cards'], $valid['text']];
+
+    $this->actingAs($this->admin)
+        ->post('/admin/pages', pagePayload($blocks))
+        ->assertSessionHasNoErrors();
+
+    $stored = Page::firstWhere('slug', 'about')->blocks;
+
+    expect(array_is_list($stored))->toBeTrue()
+        ->and(collect($stored)->pluck('type')->all())->toBe(['table', 'features', 'contact_cards', 'text'])
+        ->and(DB::table('pages')->value('blocks'))->toStartWith('[');
+
+    foreach ($stored as $block) {
+        foreach (['items', 'columns', 'rows'] as $key) {
+            if (isset($block['data'][$key])) {
+                expect(array_is_list($block['data'][$key]))->toBeTrue();
+            }
+        }
+        foreach ($block['data']['rows'] ?? [] as $row) {
+            expect(array_is_list($row))->toBeTrue();
+        }
+    }
+});
+
+test('nested lists with client-chosen keys are rejected', function () {
+    $block = validBlocks($this->image)['features'];
+    $block['data']['items'] = ['x' => $block['data']['items'][0], 'y' => $block['data']['items'][1]];
+
+    $this->actingAs($this->admin)
+        ->post('/admin/pages', pagePayload([$block]))
+        ->assertSessionHasErrors('blocks.0.data.items');
 });
 
 test('unknown block types are rejected', function () {
@@ -91,7 +131,7 @@ test('call to action links must be a site path or https', function (string $url)
     $this->actingAs($this->admin)
         ->post('/admin/pages', pagePayload([$block]))
         ->assertSessionHasErrors('blocks.0.data.button_url');
-})->with(['javascript:alert(1)', 'http://example.com', '//evil.example', 'catalog']);
+})->with(['javascript:alert(1)', 'http://example.com', '//evil.example', 'catalog', '/\\evil.example', "/\t/evil.example"]);
 
 test('site paths and https links are accepted', function (string $url) {
     $block = validBlocks($this->image)['call_to_action'];

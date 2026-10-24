@@ -22,7 +22,11 @@ test('admin can create a page', function () {
         ->post('/admin/pages', ['title' => 'FAQ', 'slug' => 'faq', 'blocks' => $this->blocks])
         ->assertRedirect('/admin/pages');
 
-    expect(Page::firstWhere('slug', 'faq')->blocks)->toEqual($this->blocks);
+    $stored = Page::firstWhere('slug', 'faq')->blocks;
+
+    expect(array_is_list($stored))->toBeTrue()
+        ->and(collect($stored)->pluck('type')->all())->toBe(collect($this->blocks)->pluck('type')->all())
+        ->and($stored)->toEqual($this->blocks);
 });
 
 test('admin edits a page with its stored blocks', function () {
