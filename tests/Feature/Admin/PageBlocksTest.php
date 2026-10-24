@@ -91,6 +91,22 @@ test('blocks and their nested lists are stored as JSON arrays, in order', functi
     }
 });
 
+test('blocks keep their order when an earlier block has only wildcard fields', function () {
+    $valid = validBlocks($this->image);
+    $features = $valid['features'];
+    unset($features['data']['heading']);
+
+    $this->actingAs($this->admin)
+        ->post('/admin/pages', pagePayload([$features, $valid['text']]))
+        ->assertSessionHasNoErrors();
+
+    $stored = Page::firstWhere('slug', 'about')->blocks;
+
+    expect(array_is_list($stored))->toBeTrue()
+        ->and(collect($stored)->pluck('type')->all())->toBe(['features', 'text'])
+        ->and(DB::table('pages')->value('blocks'))->toStartWith('[');
+});
+
 test('nested lists with client-chosen keys are rejected', function () {
     $block = validBlocks($this->image)['features'];
     $block['data']['items'] = ['x' => $block['data']['items'][0], 'y' => $block['data']['items'][1]];

@@ -123,6 +123,10 @@ enum PageBlockType: string
     private static function contactValueRule(array $input): Closure
     {
         return function (string $attribute, mixed $value, Closure $fail) use ($input): void {
+            if (! is_string($value)) {
+                return;
+            }
+
             preg_match('/\.items\.(\d+)\.value$/', $attribute, $match);
             $kind = $input['items'][$match[1] ?? '']['kind'] ?? null;
 

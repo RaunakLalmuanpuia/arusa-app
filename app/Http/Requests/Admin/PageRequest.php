@@ -41,6 +41,21 @@ class PageRequest extends FormRequest
     }
 
     /**
+     * Validated data with blocks restored to submitted order: rule expansion order (exact keys before
+     * wildcard ones) otherwise decides each block's position, which can store the list as a JSON object.
+     *
+     * @param  array-key|null  $key
+     */
+    public function validated($key = null, $default = null): mixed
+    {
+        $validated = parent::validated();
+        ksort($validated['blocks']);
+        $validated['blocks'] = array_values($validated['blocks']);
+
+        return data_get($validated, $key, $default);
+    }
+
+    /**
      * Name block fields by position, e.g. "blocks.1.data.items.*.title" becomes "block 2 items title".
      *
      * @return array<string, string>
