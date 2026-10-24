@@ -116,7 +116,7 @@ const nextHint = computed(() => (props.next_status ? nextHints[props.next_status
                             <span v-else class="text-[11px] font-semibold">{{ index + 1 }}</span>
                         </span>
                     </span>
-                    <span :class="index <= currentStep ? 'font-medium text-ink' : 'text-brand-400'">{{ step.label }}</span>
+                    <span :class="index <= currentStep ? 'font-medium text-ink' : 'text-brand-400'">{{ step.label }}<span v-if="isStepDone(index)" class="sr-only"> (done)</span></span>
                 </li>
             </ol>
 
