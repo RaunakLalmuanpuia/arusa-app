@@ -14,21 +14,28 @@ use App\Models\ProductVariant;
 use App\Models\ShippingZone;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class EdgeCaseSeeder extends Seeder
 {
-    /**
-     * Status steps of a COD order, and of an online order once it is paid.
-     *
-     * @var list<array{0: FulfilmentStatus, 1: PaymentStatus}>
-     */
-    private const COD_PATH = [[FulfilmentStatus::Pending, PaymentStatus::Pending], [FulfilmentStatus::Confirmed, PaymentStatus::Pending], [FulfilmentStatus::Packed, PaymentStatus::Pending], [FulfilmentStatus::Dispatched, PaymentStatus::Pending], [FulfilmentStatus::Delivered, PaymentStatus::Paid]];
+    use SeedsOrders;
 
     /**
-     * @var list<array{0: FulfilmentStatus, 1: PaymentStatus}>
+     * Product page copy, keyed by slug: each says what the product is there to check.
+     *
+     * @var array<string, string>
      */
-    private const ONLINE_PATH = [[FulfilmentStatus::Pending, PaymentStatus::AwaitingPayment], [FulfilmentStatus::Confirmed, PaymentStatus::Paid], [FulfilmentStatus::Packed, PaymentStatus::Paid], [FulfilmentStatus::Dispatched, PaymentStatus::Paid], [FulfilmentStatus::Delivered, PaymentStatus::Paid]];
+    private const DESCRIPTIONS = [
+        'sold-out-tee' => 'Test product: every size is out of stock, so the card and this page should say sold out.',
+        'last-one-hoodie' => 'Test product: one left in M and none in L. Adding more than one M should be capped at one.',
+        'price-range-tee' => 'Test product: S is on sale at ₹799, M is the ₹999 base price and XL costs ₹1,299. The card should read "from ₹799".',
+        'half-hidden-tee' => 'Test product: only S is on sale. M is switched off and should not be offered.',
+        'all-variants-off-tee' => 'Test product: every size is switched off, so shoppers should never see this page.',
+        'draft-tee' => 'Test product: switched off. Hidden from shoppers, but still listed in admin and in old orders.',
+        'retired-tee' => 'Test product: its category is switched off, so shoppers should never see this page.',
+        'orphaned-tee' => 'Test product: its own category is on but the parent category is off, so shoppers should never see this page.',
+        'long-name-wrap' => 'Test product: a very long name with accented characters, to check wrapping on product cards, in the bag and on the packing slip. This description is long on purpose too. It should wrap cleanly on a narrow phone screen without pushing the price, the size picker or the add-to-bag button off the edge, and the page should still read well when the text runs to several lines.',
+        'kids-tee' => 'Test product: the name has apostrophes, quotes and HTML tags. They should show as plain text, never as bold or broken markup.',
+    ];
 
     /**
      * Awkward but valid data for checking every storefront and admin state by hand: hidden and sold-out products,
@@ -131,7 +138,7 @@ class EdgeCaseSeeder extends Seeder
 
         foreach ($products as [$slug, $name, $category, $isActive, $sizes]) {
             $product = Product::factory()->for($category)->create([
-                'name' => $name, 'slug' => $slug, 'gender' => Gender::Unisex, 'base_price' => 99900, 'is_active' => $isActive,
+                'name' => $name, 'slug' => $slug, 'description' => self::DESCRIPTIONS[$slug], 'gender' => Gender::Unisex, 'base_price' => 99900, 'is_active' => $isActive,
             ]);
 
             foreach ($sizes as $size => $spec) {
@@ -188,81 +195,5 @@ class EdgeCaseSeeder extends Seeder
         User::factory()->create(['name' => 'Brand New Customer', 'email' => 'new@example.com']);
 
         return $customer;
-    }
-
-    /**
-     * The first $count steps of a status path.
-     *
-     * @param  list<array{0: FulfilmentStatus, 1: PaymentStatus}>  $path
-     * @return list<array{0: FulfilmentStatus, 1: PaymentStatus}>
-     */
-    private function steps(array $path, int $count): array
-    {
-        return array_slice($path, 0, $count);
-    }
-
-    /**
-     * An order with item snapshots, totals priced the way checkout prices them, a timeline an hour per step,
-     * and one Razorpay payment row per status in $payments (the first being the placement payment).
-     * Written without model events so the timeline is the one given, under DatabaseSeeder or on its own.
-     *
-     * @param  array<string, mixed>  $attributes
-     * @param  list<array{0: ProductVariant, 1: int, 2?: int}>  $lines  variant, quantity, and an older unit price to snapshot
-     * @param  non-empty-list<array{0: FulfilmentStatus, 1: PaymentStatus}>  $timeline
-     * @param  list<PaymentStatus>  $payments
-     */
-    private function order(ShippingZone $zone, array $attributes, array $lines, array $timeline, array $payments = [], int $minutesAgo = 0): void
-    {
-        $placedAt = now()->subMinutes($minutesAgo);
-        $items = array_map(fn (array $line): array => [
-            'product_variant_id' => $line[0]->id,
-            'product_name' => $line[0]->product->name,
-            'size' => $line[0]->size,
-            'colour' => $line[0]->colour,
-            'unit_price' => $line[2] ?? $line[0]->effectivePrice(),
-            'quantity' => $line[1],
-        ], $lines);
-        $subtotal = array_sum(array_map(fn (array $item): int => $item['unit_price'] * $item['quantity'], $items));
-        $shipping = $zone->shippingFor($subtotal);
-        // The order's current statuses are the last step of its timeline.
-        [$fulfilmentStatus, $paymentStatus] = end($timeline);
-
-        Order::withoutEvents(function () use ($zone, $attributes, $items, $timeline, $payments, $placedAt, $subtotal, $shipping, $fulfilmentStatus, $paymentStatus): void {
-            $order = Order::factory()->create([
-                // Ship to a pincode the zone covers, unless the caller gives one.
-                'ship_pincode' => $zone->pincodes->first()->pincode,
-                ...$attributes,
-                'shipping_zone_id' => $zone->id,
-                'subtotal' => $subtotal,
-                'shipping' => $shipping,
-                'total' => $subtotal + $shipping,
-                'fulfilment_status' => $fulfilmentStatus,
-                'payment_status' => $paymentStatus,
-                'placed_at' => $placedAt,
-                'created_at' => $placedAt,
-            ]);
-
-            $order->items()->createMany($items);
-
-            // One timeline row per step, an hour apart from when the order was placed.
-            foreach ($timeline as $step => [$fulfilment, $payment]) {
-                $at = $placedAt->copy()->addHours($step);
-                $order->events()->make(['fulfilment_status' => $fulfilment, 'payment_status' => $payment])
-                    ->forceFill(['created_at' => $at, 'updated_at' => $at])
-                    ->save();
-            }
-
-            // Every payment row shares the first one's Razorpay order id, as a second capture would.
-            // Only a captured payment (Paid or Refunded) has a Razorpay payment id.
-            foreach ($payments as $status) {
-                $order->payments()->create([
-                    'gateway' => 'razorpay',
-                    'gateway_order_id' => $order->payments()->value('gateway_order_id') ?? 'order_'.Str::random(14),
-                    'gateway_payment_id' => in_array($status, [PaymentStatus::Paid, PaymentStatus::Refunded], true) ? 'pay_'.Str::random(14) : null,
-                    'amount' => $order->total,
-                    'status' => $status,
-                ]);
-            }
-        });
     }
 }

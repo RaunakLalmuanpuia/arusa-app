@@ -18,9 +18,10 @@ test('the edge cases seed after the full database seeder and every order timelin
     Storage::fake('public');
 
     $this->seed();
+    $seededOrderIds = Order::pluck('id');
     $this->seed(EdgeCaseSeeder::class);
 
-    $orders = Order::with(['items', 'events'])->get();
+    $orders = Order::with(['items', 'events'])->whereKeyNot($seededOrderIds)->get();
 
     expect($orders)->toHaveCount(16);
 
