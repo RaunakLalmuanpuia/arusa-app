@@ -12,7 +12,7 @@ class PageController extends Controller
     {
         return Inertia::render('Content/Show', [
             'title' => $page->title,
-            'html' => $page->renderedBody(),
+            'blocks' => $page->renderedBlocks(),
         ]);
     }
 }

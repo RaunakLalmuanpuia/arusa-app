@@ -2,12 +2,14 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PageForm from './Partials/PageForm.vue';
+import { withoutUids, withUid } from './Blocks/blockTypes.js';
 
 const props = defineProps({
     page: { type: Object, required: true },
+    imageBaseUrl: { type: String, required: true },
 });
 
-const form = useForm({ title: props.page.title, slug: props.page.slug, body: props.page.body });
+const form = useForm({ title: props.page.title, slug: props.page.slug, blocks: props.page.blocks.map(withUid) });
 </script>
 
 <template>
@@ -21,6 +23,6 @@ const form = useForm({ title: props.page.title, slug: props.page.slug, body: pro
             </div>
         </template>
 
-        <PageForm :form="form" @submit="form.put(route('admin.pages.update', page.id))" />
+        <PageForm :form="form" :image-base-url="imageBaseUrl" @submit="form.transform(withoutUids).put(route('admin.pages.update', page.id))" />
     </AdminLayout>
 </template>
