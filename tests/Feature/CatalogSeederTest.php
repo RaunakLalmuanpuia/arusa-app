@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Gender;
 use App\Models\Category;
 use App\Models\Product;
 use Database\Seeders\CatalogSeeder;
@@ -19,6 +20,17 @@ test('the catalog seeder attaches a photo per tee colour and one for the mug', f
         ->and($mug->images->first()->colour)->toBeNull();
 
     Storage::disk('public')->assertExists($tee->images->first()->path.'-1200.webp');
+
+    $beanie = Product::where('slug', 'knit-beanie')->firstOrFail();
+    expect($beanie->gender)->toBe(Gender::Unisex)
+        ->and($beanie->images->pluck('colour')->all())->toBe(['White', 'Grey'])
+        ->and($beanie->variants->pluck('sku')->all())->toBe(['KNIT-BEANIE-WHITE', 'KNIT-BEANIE-GREY'])
+        ->and(Product::whereNotNull('gender')->has('images')->count())->toBe(13)
+        ->and(Product::whereNull('gender')->has('images')->count())->toBe(7);
+
+    $candle = Product::where('slug', 'soy-candle')->firstOrFail();
+    expect($candle->variants->pluck('sku')->all())->toBe(['SOY-CANDLE'])
+        ->and($candle->images)->toHaveCount(1);
 });
 
 test('the category image seeder fills top-level tiles once and keeps existing images', function () {
