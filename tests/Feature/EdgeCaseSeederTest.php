@@ -14,10 +14,11 @@ function edgeOrder(string $customerName): Order
     return Order::where('customer_name', $customerName)->sole();
 }
 
-test('the full database seeder runs with the edge cases and every order timeline ends at its statuses', function () {
+test('the edge cases seed after the full database seeder and every order timeline ends at its statuses', function () {
     Storage::fake('public');
 
     $this->seed();
+    $this->seed(EdgeCaseSeeder::class);
 
     $orders = Order::with(['items', 'events'])->get();
 
