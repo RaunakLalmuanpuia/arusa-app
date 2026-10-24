@@ -19,6 +19,7 @@ import logo512 from '../../images/logo-512.jpg';
 const isDrawerOpen = ref(false);
 const menuButton = ref(null);
 const nav = ref(null);
+const sidebar = ref(null);
 
 const links = [
     { label: 'Dashboard', route: 'admin.dashboard', match: 'admin.dashboard', icon: IconHome },
@@ -44,13 +45,47 @@ const closeDrawer = () => {
 };
 
 const onKeydown = (event) => {
-    if (event.key === 'Escape' && isDrawerOpen.value) {
+    if (!isDrawerOpen.value) {
+        return;
+    }
+
+    if (event.key === 'Escape') {
         closeDrawer();
+    }
+
+    // Keep Tab inside the open drawer, wrapping at both ends.
+    if (event.key === 'Tab') {
+        const focusable = [...sidebar.value.querySelectorAll('a[href], button')];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const isInside = sidebar.value.contains(document.activeElement);
+
+        if (event.shiftKey && (document.activeElement === first || !isInside)) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !isInside)) {
+            event.preventDefault();
+            first.focus();
+        }
     }
 };
 
-onMounted(() => window.addEventListener('keydown', onKeydown));
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
+// The drawer is mobile only: drop it (and its dialog role) when the window widens to the desktop sidebar.
+const desktopQuery = window.matchMedia('(min-width: 768px)');
+const onDesktopChange = (event) => {
+    if (event.matches) {
+        isDrawerOpen.value = false;
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('keydown', onKeydown);
+    desktopQuery.addEventListener('change', onDesktopChange);
+});
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onKeydown);
+    desktopQuery.removeEventListener('change', onDesktopChange);
+});
 </script>
 
 <template>
@@ -86,6 +121,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
         <aside
             id="admin-sidebar"
+            ref="sidebar"
             :role="isDrawerOpen ? 'dialog' : null"
             :aria-modal="isDrawerOpen ? 'true' : null"
             aria-label="Admin menu"

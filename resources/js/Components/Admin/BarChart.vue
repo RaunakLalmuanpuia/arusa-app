@@ -16,6 +16,22 @@ const total = computed(() => props.points.reduce((sum, point) => sum + point.val
 const slotWidth = computed(() => width / props.points.length);
 const barHeight = (value) => (max.value ? (value / max.value) * height : 0);
 const isLabelled = (index) => (props.points.length - 1 - index) % 7 === 0;
+
+// Centred over its bar, except near the ends where it anchors to the bar's outer edge so it stays inside the card.
+const tooltipPosition = computed(() => {
+    const count = props.points.length;
+    const index = activeIndex.value ?? 0;
+
+    if (index < 3) {
+        return { style: { left: `${(index / count) * 100}%` }, class: '' };
+    }
+
+    if (index >= count - 3) {
+        return { style: { right: `${((count - 1 - index) / count) * 100}%` }, class: '' };
+    }
+
+    return { style: { left: `${((index + 0.5) / count) * 100}%` }, class: '-translate-x-1/2' };
+});
 </script>
 
 <template>
@@ -62,8 +78,9 @@ const isLabelled = (index) => (props.points.length - 1 - index) % 7 === 0;
                     </svg>
                     <div
                         v-if="activeIndex !== null"
-                        class="pointer-events-none absolute top-0 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs text-brand-50 shadow"
-                        :style="{ left: `${((activeIndex + 0.5) / points.length) * 100}%` }"
+                        :class="tooltipPosition.class"
+                        class="pointer-events-none absolute top-0 z-10 -translate-y-full whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs text-brand-50 shadow"
+                        :style="tooltipPosition.style"
                     >
                         <span class="block text-brand-300">{{ points[activeIndex].label }}</span>
                         <span class="font-medium tabular-nums">{{ format(points[activeIndex].value) }}</span>

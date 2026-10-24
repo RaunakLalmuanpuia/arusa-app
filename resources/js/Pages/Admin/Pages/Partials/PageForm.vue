@@ -24,6 +24,13 @@ const tabs = [
     { value: 'preview', label: 'Preview' },
 ];
 
+// Arrow keys move between tabs (roving tabindex, as the ARIA tabs pattern expects).
+const selectTab = (event, offset) => {
+    const index = (tabs.findIndex((option) => option.value === tab.value) + offset + tabs.length) % tabs.length;
+    tab.value = tabs[index].value;
+    event.currentTarget.parentElement.children[index].focus();
+};
+
 const move = (index, offset) => {
     const [block] = props.form.blocks.splice(index, 1);
     props.form.blocks.splice(index + offset, 0, block);
@@ -68,9 +75,12 @@ const hasErrors = (index) => Object.keys(props.form.errors).some((key) => key.st
                         role="tab"
                         aria-controls="sections-panel"
                         :aria-selected="tab === option.value"
+                        :tabindex="tab === option.value ? 0 : -1"
                         :class="tab === option.value ? 'border-ink text-ink' : 'border-transparent text-brand-500 hover:text-ink'"
                         class="focus-ring -mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors duration-150 motion-reduce:transition-none"
                         @click="tab = option.value"
+                        @keydown.right.prevent="selectTab($event, 1)"
+                        @keydown.left.prevent="selectTab($event, -1)"
                     >
                         {{ option.label }}
                     </button>
