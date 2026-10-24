@@ -3,6 +3,7 @@
 use App\Enums\Gender;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 
 beforeEach(function () {
@@ -105,4 +106,16 @@ test('a picked gender is remembered for later visits until all is picked', funct
     $this->withCookie('gender', 'men')->get('/categories/apparel?gender=')
         ->assertCookieExpired('gender')
         ->assertInertia(fn ($page) => $page->where('filters.gender', null)->has('products', 2));
+});
+
+test('a colour filter shows that colour photo on the card', function () {
+    $beanie = productWith($this->apparel, ['colour' => 'White'], ['colour' => 'Grey']);
+    ProductImage::factory()->for($beanie)->create(['colour' => 'White', 'alt' => 'white photo', 'sort_order' => 1]);
+    ProductImage::factory()->for($beanie)->create(['colour' => 'Grey', 'alt' => 'grey photo', 'sort_order' => 2]);
+
+    $this->get('/categories/apparel?colour=Grey')
+        ->assertInertia(fn ($page) => $page->where('products.0.image.alt', 'grey photo'));
+
+    $this->get('/categories/apparel')
+        ->assertInertia(fn ($page) => $page->where('products.0.image.alt', 'white photo'));
 });

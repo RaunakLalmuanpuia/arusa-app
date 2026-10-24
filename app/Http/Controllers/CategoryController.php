@@ -42,7 +42,7 @@ class CategoryController extends Controller
                 ->when($filters['colour'] ?? null, fn (Builder $q, string $colour) => $q->where('colour', $colour))
                 ->when($filters['min'] ?? null, fn (Builder $q, $min) => $q->whereRaw('coalesce(price_override, products.base_price) >= ?', [(int) $min * 100]))
                 ->when($filters['max'] ?? null, fn (Builder $q, $max) => $q->whereRaw('coalesce(price_override, products.base_price) <= ?', [(int) $max * 100]))))
-            ->withCardData()
+            ->withCardData($filters['colour'] ?? null)
             ->latest()
             ->get();
 

@@ -71,16 +71,19 @@ class Product extends Model
     }
 
     /**
-     * Eager-load what cardData() needs: active variants and the first two images.
+     * Eager-load what cardData() needs: active variants and the first two images,
+     * with the given colour's images first so a colour-filtered card shows that colour.
      *
      * @param  Builder<Product>  $query
      */
     #[Scope]
-    protected function withCardData(Builder $query): void
+    protected function withCardData(Builder $query, ?string $colour = null): void
     {
         $query->with([
             'variants' => fn (HasMany $variants) => $variants->where('is_active', true),
-            'images' => fn (HasMany $images) => $images->limit(2),
+            'images' => fn (HasMany $images) => $images
+                ->when($colour, fn (Builder $images, string $colour) => $images->reorder()->orderByRaw('case when colour = ? then 0 else 1 end', [$colour])->orderBy('sort_order')->orderBy('id'))
+                ->limit(2),
         ]);
     }
 
