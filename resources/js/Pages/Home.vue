@@ -45,7 +45,7 @@ const scrollToNewIn = () => {
             <div class="absolute inset-0 -z-10 bg-gradient-to-t from-brand-900 via-brand-900/60 to-brand-900/20" aria-hidden="true" />
 
             <div class="mx-auto flex min-h-[80svh] max-w-6xl flex-col items-center justify-center px-4 py-20 text-center">
-                <ApplicationLogo on-dark sizes="112px" class="h-24 w-24 animate-rise-in sm:h-28 sm:w-28" />
+                <ApplicationLogo on-dark sizes="(min-width: 640px) 224px, 160px" class="h-40 w-40 animate-logo-in sm:h-56 sm:w-56" />
                 <div class="mt-8 flex w-full items-center justify-center gap-4 sm:gap-6">
                     <span class="h-px w-10 origin-right animate-rule-draw bg-brand-400 [animation-delay:150ms] sm:w-16" aria-hidden="true" />
                     <h1 class="animate-rise-in font-display text-5xl font-semibold uppercase tracking-[0.12em] [animation-delay:150ms] sm:text-7xl">
