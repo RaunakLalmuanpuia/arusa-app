@@ -1,6 +1,5 @@
 <script setup>
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
+import FormField from '@/Components/Admin/FormField.vue';
 import { fieldClass } from './fieldOptions.js';
 
 defineProps({
@@ -15,13 +14,11 @@ const value = defineModel({ type: String, default: '' });
 </script>
 
 <template>
-    <div>
-        <InputLabel :for="id" :value="label" />
-        <select v-if="options" :id="id" v-model="value" :class="fieldClass" class="mt-1">
+    <FormField :label="label" :for="id" :error="error">
+        <select v-if="options" :id="id" v-model="value" :class="fieldClass">
             <option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option>
         </select>
-        <textarea v-else-if="rows" :id="id" v-model="value" :rows="rows" :class="fieldClass" class="mt-1" />
-        <input v-else :id="id" v-model="value" :class="fieldClass" class="mt-1" />
-        <InputError class="mt-2" :message="error" />
-    </div>
+        <textarea v-else-if="rows" :id="id" v-model="value" :rows="rows" :class="fieldClass" />
+        <input v-else :id="id" v-model="value" :class="fieldClass" />
+    </FormField>
 </template>
