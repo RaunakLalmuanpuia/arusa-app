@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\FulfilmentStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\Payment;
@@ -94,4 +95,15 @@ test('a date range that ends before it starts is rejected', function () {
 
 test('an unknown zone filter is rejected', function () {
     $this->actingAs($this->admin)->get('/admin/orders?shipping_zone_id=999999')->assertSessionHasErrors('shipping_zone_id');
+});
+
+test('each listed order carries its status values for badges', function () {
+    Order::factory()->razorpay()->create(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Packed]);
+
+    $this->actingAs($this->admin)->get(route('admin.orders.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where('orders.data.0.status_value', 'packed')
+            ->where('orders.data.0.payment_status_value', 'paid')
+            ->where('orders.data.0.payment_status_label', PaymentStatus::Paid->label())
+            ->where('orders.data.0.payment_method_label', PaymentMethod::Razorpay->label()));
 });

@@ -20,7 +20,8 @@ test('the dashboard shows today\'s orders', function () {
         ->assertInertia(fn ($page) => $page
             ->component('Admin/Dashboard')
             ->where('today.count', 1)
-            ->where('today.orders.0.id', $today->id));
+            ->where('today.orders.0.id', $today->id)
+            ->where('today.orders.0.status_value', $today->fulfilment_status->value));
 });
 
 test('the dashboard counts orders that need action', function () {
@@ -69,4 +70,25 @@ test('revenue counts paid orders placed in the last 7 and 30 days', function () 
         ->assertInertia(fn ($page) => $page
             ->where('revenue.last_7_days', 30000)
             ->where('revenue.last_30_days', 70000));
+});
+
+test('daily revenue lists the last 30 days oldest first with empty days as zero', function () {
+    Order::factory()->create(['payment_status' => PaymentStatus::Paid, 'total' => 10000]);
+    Order::factory()->create(['payment_status' => PaymentStatus::Paid, 'total' => 5000]);
+    Order::factory()->create(['payment_status' => PaymentStatus::Paid, 'total' => 20000, 'placed_at' => now()->subDays(29)]);
+    Order::factory()->create(['payment_status' => PaymentStatus::Paid, 'total' => 40000, 'placed_at' => now()->subDays(30)]);
+    Order::factory()->create(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Cancelled, 'total' => 80000]);
+    Order::factory()->create(['total' => 160000]);
+
+    $this->actingAs($this->admin)->get('/admin')
+        ->assertInertia(fn ($page) => $page
+            ->has('revenue.daily', 30)
+            ->where('revenue.daily.0', [
+                'date' => today()->subDays(29)->format('Y-m-d'),
+                'label' => today()->subDays(29)->format('j M'),
+                'value' => 20000,
+            ])
+            ->where('revenue.daily.1.value', 0)
+            ->where('revenue.daily.29.date', today()->format('Y-m-d'))
+            ->where('revenue.daily.29.value', 15000));
 });
