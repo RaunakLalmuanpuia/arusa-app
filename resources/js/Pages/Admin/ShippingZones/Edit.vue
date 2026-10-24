@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
 import ShippingZoneForm from './Partials/ShippingZoneForm.vue';
 import { toPaise } from '@/money';
 
@@ -32,7 +33,7 @@ const submit = () => {
 
     <AdminLayout>
         <template #header>
-            <h1 class="text-xl font-semibold text-gray-900">Edit shipping zone</h1>
+            <PageHeader :title="zone.name" :back="{ label: 'Shipping zones', href: route('admin.shipping-zones.index') }" />
         </template>
 
         <ShippingZoneForm :form="form" @submit="submit" />

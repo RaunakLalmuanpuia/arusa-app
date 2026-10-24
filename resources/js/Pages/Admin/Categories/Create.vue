@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
 import CategoryForm from './Partials/CategoryForm.vue';
 
 defineProps({
@@ -15,7 +16,7 @@ const form = useForm({ name: '', slug: '', parent_id: null, sort_order: 0, is_ac
 
     <AdminLayout>
         <template #header>
-            <h1 class="text-xl font-semibold text-gray-900">New category</h1>
+            <PageHeader title="New category" :back="{ label: 'Categories', href: route('admin.categories.index') }" />
         </template>
 
         <CategoryForm :form="form" :parents="parents" @submit="form.post(route('admin.categories.store'))" />

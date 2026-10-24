@@ -1,11 +1,10 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import Checkbox from '@/Components/Checkbox.vue';
+import FormField from '@/Components/Admin/FormField.vue';
+import FormSection from '@/Components/Admin/FormSection.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
+import SaveBar from '@/Components/Admin/SaveBar.vue';
 
 const props = defineProps({
     settings: { type: Object, required: true },
@@ -19,11 +18,10 @@ const form = useForm({
     cod_enabled: props.settings.cod_enabled === '1',
 });
 
-const fields = [
-    { key: 'store_name', label: 'Store name', type: 'text' },
-    { key: 'contact_phone', label: 'Contact phone (10 digits)', type: 'tel' },
-    { key: 'whatsapp_number', label: 'WhatsApp number (10 digits)', type: 'tel' },
-    { key: 'contact_email', label: 'Contact email', type: 'email' },
+const contactFields = [
+    { key: 'contact_phone', label: 'Contact phone', hint: '10 digits.', type: 'tel' },
+    { key: 'whatsapp_number', label: 'WhatsApp number', hint: '10 digits.', type: 'tel' },
+    { key: 'contact_email', label: 'Contact email', hint: null, type: 'email' },
 ];
 </script>
 
@@ -32,22 +30,29 @@ const fields = [
 
     <AdminLayout>
         <template #header>
-            <h1 class="text-xl font-semibold text-gray-900">Settings</h1>
+            <PageHeader title="Settings" />
         </template>
 
-        <form class="max-w-xl space-y-6 rounded bg-white p-6 shadow-sm" @submit.prevent="form.put(route('admin.settings.update'))">
-            <div v-for="field in fields" :key="field.key">
-                <InputLabel :for="field.key" :value="field.label" />
-                <TextInput :id="field.key" v-model="form[field.key]" :type="field.type" class="mt-1 block w-full" />
-                <InputError class="mt-2" :message="form.errors[field.key]" />
+        <form class="max-w-4xl" @submit.prevent="form.put(route('admin.settings.update'))">
+            <div class="admin-card divide-y divide-brand-100">
+                <FormSection title="Store">
+                    <FormField label="Store name" for="store_name" :error="form.errors.store_name">
+                        <input id="store_name" v-model="form.store_name" type="text" class="admin-field" />
+                    </FormField>
+                </FormSection>
+                <FormSection title="Contact" description="Shown to customers and used for order messages.">
+                    <FormField v-for="field in contactFields" :key="field.key" :label="field.label" :for="field.key" :hint="field.hint" :error="form.errors[field.key]">
+                        <input :id="field.key" v-model="form[field.key]" :type="field.type" class="admin-field" />
+                    </FormField>
+                </FormSection>
+                <FormSection title="Payments">
+                    <label class="flex items-center gap-3 text-sm">
+                        <input v-model="form.cod_enabled" type="checkbox" class="admin-checkbox" />
+                        Cash on delivery enabled
+                    </label>
+                </FormSection>
             </div>
-
-            <label class="flex items-center gap-2">
-                <Checkbox v-model:checked="form.cod_enabled" />
-                <span class="text-sm text-gray-700">Cash on delivery enabled</span>
-            </label>
-
-            <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
+            <SaveBar :form="form" />
         </form>
     </AdminLayout>
 </template>

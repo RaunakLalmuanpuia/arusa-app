@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
 import CategoryForm from './Partials/CategoryForm.vue';
 
 const props = defineProps({
@@ -20,7 +21,7 @@ const submit = () => form.transform((data) => ({ ...data, _method: 'put' })).pos
 
     <AdminLayout>
         <template #header>
-            <h1 class="text-xl font-semibold text-gray-900">Edit category</h1>
+            <PageHeader :title="category.name" :back="{ label: 'Categories', href: route('admin.categories.index') }" />
         </template>
 
         <CategoryForm :form="form" :parents="parents" :image-url="imageUrl" @submit="submit" />

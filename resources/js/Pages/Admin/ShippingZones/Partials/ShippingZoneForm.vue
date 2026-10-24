@@ -1,10 +1,8 @@
 <script setup>
 import { computed } from 'vue';
-import Checkbox from '@/Components/Checkbox.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import FormField from '@/Components/Admin/FormField.vue';
+import FormSection from '@/Components/Admin/FormSection.vue';
+import SaveBar from '@/Components/Admin/SaveBar.vue';
 
 const props = defineProps({
     form: { type: Object, required: true },
@@ -20,50 +18,45 @@ const pincodeErrors = computed(() =>
 </script>
 
 <template>
-    <form class="max-w-xl space-y-6 rounded bg-white p-6 shadow-sm" @submit.prevent="$emit('submit')">
-        <div>
-            <InputLabel for="name" value="Name" />
-            <TextInput id="name" v-model="form.name" class="mt-1 block w-full" required />
-            <InputError class="mt-2" :message="form.errors.name" />
+    <form class="max-w-4xl" @submit.prevent="$emit('submit')">
+        <div class="admin-card divide-y divide-brand-100">
+            <FormSection title="Details">
+                <FormField label="Name" for="name" :error="form.errors.name">
+                    <input id="name" v-model="form.name" class="admin-field" required />
+                </FormField>
+            </FormSection>
+            <FormSection title="Rates" description="What delivery costs in this zone, and whether cash on delivery is offered.">
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <FormField label="Shipping rate (₹)" for="rate" :error="form.errors.rate">
+                        <input id="rate" v-model="form.rate" type="number" min="0" step="0.01" class="admin-field" required />
+                    </FormField>
+                    <FormField label="Free shipping from (₹)" for="free_above" hint="Optional." :error="form.errors.free_above">
+                        <input id="free_above" v-model="form.free_above" type="number" min="0" step="0.01" class="admin-field" />
+                    </FormField>
+                </div>
+                <label class="flex items-center gap-3 text-sm">
+                    <input v-model="form.cod_allowed" type="checkbox" class="admin-checkbox" />
+                    Cash on delivery allowed
+                </label>
+                <FormField v-if="form.cod_allowed" label="COD only up to (₹)" for="cod_max" hint="Optional." :error="form.errors.cod_max">
+                    <input id="cod_max" v-model="form.cod_max" type="number" min="1" step="0.01" class="admin-field w-40" />
+                </FormField>
+            </FormSection>
+            <FormSection title="Pincodes" description="Separate with commas, spaces or new lines.">
+                <FormField label="Pincodes" for="pincodes">
+                    <textarea id="pincodes" v-model="form.pincodes" rows="6" class="admin-field font-mono" required />
+                </FormField>
+                <ul v-if="pincodeErrors.length" class="space-y-1 text-sm text-red-700">
+                    <li v-for="message in pincodeErrors" :key="message">{{ message }}</li>
+                </ul>
+            </FormSection>
+            <FormSection title="Status">
+                <label class="flex items-center gap-3 text-sm">
+                    <input v-model="form.is_active" type="checkbox" class="admin-checkbox" />
+                    Active
+                </label>
+            </FormSection>
         </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-                <InputLabel for="rate" value="Shipping rate (₹)" />
-                <TextInput id="rate" v-model="form.rate" type="number" min="0" step="0.01" class="mt-1 block w-full" required />
-                <InputError class="mt-2" :message="form.errors.rate" />
-            </div>
-            <div>
-                <InputLabel for="free_above" value="Free shipping from (₹, optional)" />
-                <TextInput id="free_above" v-model="form.free_above" type="number" min="0" step="0.01" class="mt-1 block w-full" />
-                <InputError class="mt-2" :message="form.errors.free_above" />
-            </div>
-        </div>
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-            <Checkbox v-model:checked="form.cod_allowed" />
-            Cash on delivery allowed
-        </label>
-        <div v-if="form.cod_allowed">
-            <InputLabel for="cod_max" value="COD only up to (₹, optional)" />
-            <TextInput id="cod_max" v-model="form.cod_max" type="number" min="1" step="0.01" class="mt-1 block w-40" />
-            <InputError class="mt-2" :message="form.errors.cod_max" />
-        </div>
-        <div>
-            <InputLabel for="pincodes" value="Pincodes (separate with commas, spaces or new lines)" />
-            <textarea
-                id="pincodes"
-                v-model="form.pincodes"
-                rows="6"
-                class="mt-1 block w-full rounded-md border-gray-300 font-mono text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                required
-            />
-            <ul v-if="pincodeErrors.length" class="mt-2 space-y-1 text-sm text-red-600">
-                <li v-for="message in pincodeErrors" :key="message">{{ message }}</li>
-            </ul>
-        </div>
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-            <Checkbox v-model:checked="form.is_active" />
-            Active
-        </label>
-        <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
+        <SaveBar :form="form" />
     </form>
 </template>
