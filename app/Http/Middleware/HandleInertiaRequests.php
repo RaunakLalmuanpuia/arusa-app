@@ -45,8 +45,9 @@ class HandleInertiaRequests extends Middleware
                 ->whereNull('parent_id')
                 ->orderBy('sort_order')
                 ->orderBy('name')
-                ->get(['name', 'slug'])
-                ->toArray(),
+                ->get(['name', 'slug', 'image_path'])
+                ->map(fn (Category $category): array => [...$category->only('name', 'slug'), 'image' => $category->imageData()])
+                ->all(),
             'cart' => fn (): ?array => $request->routeIs('admin.*') ? null : app(Cart::class)->summary(),
             'flash' => [
                 'status' => fn (): ?string => $request->session()->get('status'),

@@ -32,6 +32,7 @@ class CategoryRequest extends FormRequest
             ],
             'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
             'is_active' => ['required', 'boolean'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192', 'dimensions:max_width=6000,max_height=6000'],
         ];
     }
 

@@ -7,7 +7,7 @@ defineProps({
     parents: { type: Array, required: true },
 });
 
-const form = useForm({ name: '', slug: '', parent_id: null, sort_order: 0, is_active: true });
+const form = useForm({ name: '', slug: '', parent_id: null, sort_order: 0, is_active: true, image: null });
 </script>
 
 <template>

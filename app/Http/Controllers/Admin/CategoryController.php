@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\StoreWebpImage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -46,9 +48,10 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function store(CategoryRequest $request): RedirectResponse
+    public function store(CategoryRequest $request, StoreWebpImage $storeWebpImage): RedirectResponse
     {
-        Category::create($request->validated());
+        $category = Category::create($request->safe()->except('image'));
+        $this->storeImage($request, $category, $storeWebpImage);
 
         return to_route('admin.categories.index')->with('status', 'Category created.');
     }
@@ -57,13 +60,15 @@ class CategoryController extends Controller
     {
         return Inertia::render('Admin/Categories/Edit', [
             'category' => $category->only('id', 'name', 'slug', 'parent_id', 'sort_order', 'is_active'),
+            'imageUrl' => $category->imageData()['src'] ?? null,
             'parents' => $this->parentOptions($category),
         ]);
     }
 
-    public function update(CategoryRequest $request, Category $category): RedirectResponse
+    public function update(CategoryRequest $request, Category $category, StoreWebpImage $storeWebpImage): RedirectResponse
     {
-        $category->update($request->validated());
+        $category->update($request->safe()->except('image'));
+        $this->storeImage($request, $category, $storeWebpImage);
 
         return to_route('admin.categories.index')->with('status', 'Category saved.');
     }
@@ -75,8 +80,26 @@ class CategoryController extends Controller
         }
 
         $category->delete();
+        Category::deleteImageFiles($category->image_path);
 
         return to_route('admin.categories.index')->with('status', 'Category deleted.');
+    }
+
+    /**
+     * Save an uploaded image as WebP and remove the one it replaces.
+     */
+    private function storeImage(CategoryRequest $request, Category $category, StoreWebpImage $storeWebpImage): void
+    {
+        if (! $request->hasFile('image')) {
+            return;
+        }
+
+        $previousPath = $category->image_path;
+        $path = 'categories/'.Str::uuid();
+
+        $storeWebpImage->handle($request->file('image'), $path, Category::IMAGE_WIDTHS, 'image');
+        $category->update(['image_path' => $path]);
+        Category::deleteImageFiles($previousPath);
     }
 
     /**

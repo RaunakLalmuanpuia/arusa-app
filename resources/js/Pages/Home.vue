@@ -95,12 +95,23 @@ const scrollToNewIn = () => {
                 <Reveal v-for="(category, index) in page.props.categories" :key="category.slug" as="li" :delay="(index % 2) * 75">
                     <Link
                         :href="route('categories.show', category.slug)"
-                        class="group flex aspect-[2/1] flex-col justify-end bg-brand-900 p-6 text-brand-50 focus-ring sm:p-8"
+                        class="group relative flex aspect-[2/1] flex-col justify-end overflow-hidden bg-brand-900 p-6 text-brand-50 focus-ring sm:p-8"
                     >
-                        <span class="text-[10px] uppercase tracking-[0.3em] text-brand-300">Shop</span>
-                        <span class="mt-2 font-display text-3xl font-semibold uppercase tracking-[0.12em] sm:text-4xl">{{ category.name }}</span>
+                        <template v-if="category.image">
+                            <img
+                                :src="category.image.src"
+                                :srcset="category.image.srcset"
+                                sizes="(min-width: 640px) 50vw, 100vw"
+                                alt=""
+                                loading="lazy"
+                                class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none"
+                            />
+                            <span class="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" aria-hidden="true" />
+                        </template>
+                        <span class="relative text-[10px] uppercase tracking-[0.3em] text-brand-300">Shop</span>
+                        <span class="relative mt-2 font-display text-3xl font-semibold uppercase tracking-[0.12em] sm:text-4xl">{{ category.name }}</span>
                         <span
-                            class="mt-4 h-px w-10 origin-left bg-brand-400 transition-transform duration-300 group-hover:scale-x-[2.5] motion-reduce:transition-none"
+                            class="relative mt-4 h-px w-10 origin-left bg-brand-400 transition-transform duration-300 group-hover:scale-x-[2.5] motion-reduce:transition-none"
                             aria-hidden="true"
                         />
                     </Link>

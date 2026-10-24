@@ -8,6 +8,7 @@ import TextInput from '@/Components/TextInput.vue';
 defineProps({
     form: { type: Object, required: true },
     parents: { type: Array, required: true },
+    imageUrl: { type: String, default: null },
 });
 
 defineEmits(['submit']);
@@ -36,6 +37,18 @@ defineEmits(['submit']);
                 <option v-for="parent in parents" :key="parent.id" :value="parent.id">{{ parent.name }}</option>
             </select>
             <InputError class="mt-2" :message="form.errors.parent_id" />
+        </div>
+        <div>
+            <InputLabel for="image" value="Image (shown on the home page tile)" />
+            <img v-if="imageUrl && !form.image" :src="imageUrl" alt="" class="mt-2 aspect-[2/1] w-64 rounded object-cover" />
+            <input
+                id="image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                class="mt-2 block w-full text-sm text-gray-700"
+                @input="form.image = $event.target.files[0] ?? null"
+            />
+            <InputError class="mt-2" :message="form.errors.image" />
         </div>
         <div>
             <InputLabel for="sort_order" value="Sort order (lower shows first)" />

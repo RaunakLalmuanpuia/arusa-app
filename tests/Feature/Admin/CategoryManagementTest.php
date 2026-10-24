@@ -3,6 +3,8 @@
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
@@ -73,6 +75,59 @@ test('an empty category can be deleted', function () {
     $this->actingAs($this->admin)->delete("/admin/categories/{$category->id}")->assertRedirect('/admin/categories');
 
     expect(Category::count())->toBe(0);
+});
+
+test('admin can upload a category image and it shows on the home page', function () {
+    Storage::fake('public');
+
+    $this->actingAs($this->admin)
+        ->post('/admin/categories', [
+            'name' => 'Tees', 'slug' => 'tees', 'parent_id' => null, 'sort_order' => 0, 'is_active' => true,
+            'image' => UploadedFile::fake()->image('tees.jpg', 2000, 1000),
+        ])
+        ->assertRedirect('/admin/categories');
+
+    $path = Category::where('slug', 'tees')->value('image_path');
+
+    expect(getimagesizefromstring(Storage::disk('public')->get("{$path}-1600.webp"))['mime'])->toBe('image/webp');
+
+    $this->get('/')->assertInertia(fn ($page) => $page
+        ->where('categories.0.image.src', Storage::disk('public')->url("{$path}-800.webp")));
+});
+
+test('replacing a category image deletes the old files', function () {
+    Storage::fake('public');
+    $category = Category::factory()->create();
+    $update = fn () => $this->actingAs($this->admin)->put("/admin/categories/{$category->id}", [
+        'name' => $category->name, 'slug' => $category->slug, 'parent_id' => null, 'sort_order' => 0, 'is_active' => true,
+        'image' => UploadedFile::fake()->image('tees.jpg', 1000, 500),
+    ])->assertRedirect('/admin/categories');
+
+    $update();
+    $oldPath = $category->fresh()->image_path;
+    $update();
+
+    expect(Storage::disk('public')->allFiles())->toHaveCount(2)
+        ->and(Storage::disk('public')->exists("{$oldPath}-800.webp"))->toBeFalse();
+});
+
+test('deleting a category deletes its image files', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('categories/abc-800.webp', 'x');
+    $category = Category::factory()->create(['image_path' => 'categories/abc']);
+
+    $this->actingAs($this->admin)->delete("/admin/categories/{$category->id}");
+
+    expect(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+test('category image must be an image', function () {
+    $this->actingAs($this->admin)
+        ->post('/admin/categories', [
+            'name' => 'Tees', 'slug' => 'tees', 'parent_id' => null, 'sort_order' => 0, 'is_active' => true,
+            'image' => UploadedFile::fake()->create('menu.pdf', 10, 'application/pdf'),
+        ])
+        ->assertSessionHasErrors('image');
 });
 
 test('non-admins cannot manage categories', function () {
