@@ -19,7 +19,7 @@ const columns = [
     { key: 'placed_at', label: 'Placed' },
     { key: 'customer', label: 'Customer' },
     { key: 'zone', label: 'Zone' },
-    { key: 'total', label: 'Total' },
+    { key: 'total', label: 'Total', align: 'right' },
     { key: 'payment', label: 'Payment' },
     { key: 'status', label: 'Status' },
 ];

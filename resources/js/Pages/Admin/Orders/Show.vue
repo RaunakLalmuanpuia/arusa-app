@@ -121,7 +121,7 @@ const nextHint = computed(() => (props.next_status ? nextHints[props.next_status
             </ol>
 
             <p v-if="next_status?.value === 'confirmed'" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
-                Call <a :href="`tel:+91${order.customer_phone}`" class="font-medium underline">{{ order.customer_phone }}</a> to confirm this cash-on-delivery order before packing it.
+                Call <a :href="`tel:+91${order.customer_phone}`" class="focus-ring rounded font-medium underline">{{ order.customer_phone }}</a> to confirm this cash-on-delivery order before packing it.
                 It is cancelled automatically 24 hours after it was placed if nobody confirms it.
             </p>
 
@@ -188,7 +188,7 @@ const nextHint = computed(() => (props.next_status ? nextHints[props.next_status
                 </section>
             </div>
 
-            <section v-if="payments.length" class="admin-card overflow-x-auto">
+            <section v-if="payments.length" class="admin-card relative overflow-x-auto">
                 <h2 class="border-b border-brand-200 px-5 py-4 font-medium">Payment attempts</h2>
                 <table class="w-full text-left text-sm">
                     <thead class="border-b border-brand-200 bg-brand-50/60 text-xs uppercase tracking-wide text-brand-500">

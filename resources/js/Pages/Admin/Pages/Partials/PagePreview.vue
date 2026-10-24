@@ -24,9 +24,10 @@ const load = async () => {
             body: JSON.stringify({ blocks: withoutUids({ blocks: props.form.blocks }).blocks }),
         });
 
+        props.form.clearErrors(...Object.keys(props.form.errors).filter((key) => key.startsWith('blocks')));
+
         if (response.status === 422) {
             const { errors } = await response.json();
-            props.form.clearErrors(...Object.keys(props.form.errors).filter((key) => key.startsWith('blocks')));
             props.form.setError(Object.fromEntries(Object.entries(errors).map(([key, messages]) => [key, messages[0]])));
             state.value = 'invalid';
         } else if (response.ok) {

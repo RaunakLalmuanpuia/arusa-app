@@ -47,12 +47,12 @@ const apply = () => {
                 <table class="w-full text-left text-sm">
                     <thead class="border-b border-brand-200 bg-brand-50/60 text-xs uppercase tracking-wide text-brand-500">
                         <tr>
-                            <th v-for="column in columns" :key="column.key" scope="col" class="px-4 py-3 font-medium">{{ column.label }}</th>
+                            <th v-for="column in columns" :key="column.key" scope="col" class="px-4 py-3 font-medium" :class="{ 'text-right': column.align === 'right' }">{{ column.label }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-brand-100">
                         <tr v-for="row in rows.data" :key="row.id" class="transition-colors duration-150 hover:bg-brand-50/60 motion-reduce:transition-none">
-                            <td v-for="column in columns" :key="column.key" class="px-4 py-3 align-middle">
+                            <td v-for="column in columns" :key="column.key" class="px-4 py-3 align-middle" :class="{ 'text-right': column.align === 'right' }">
                                 <slot :name="`cell-${column.key}`" :row="row">{{ row[column.key] }}</slot>
                             </td>
                         </tr>

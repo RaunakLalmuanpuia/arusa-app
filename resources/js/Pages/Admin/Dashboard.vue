@@ -72,7 +72,7 @@ const kpis = computed(() => [
             </section>
 
             <div class="grid gap-6 lg:grid-cols-2">
-                <section class="admin-card">
+                <section class="admin-card min-w-0">
                     <h2 class="border-b border-brand-200 px-5 py-4 font-medium">Today's orders</h2>
                     <ul v-if="today.orders.length" class="divide-y divide-brand-100">
                         <li v-for="order in today.orders" :key="order.id">
@@ -87,7 +87,7 @@ const kpis = computed(() => [
                     <p v-else class="px-5 py-10 text-center text-sm text-brand-500">No orders yet today.</p>
                 </section>
 
-                <section class="admin-card">
+                <section class="admin-card min-w-0">
                     <h2 class="border-b border-brand-200 px-5 py-4 font-medium">Low stock (3 or fewer)</h2>
                     <ul v-if="low_stock.length" class="divide-y divide-brand-100">
                         <li v-for="variant in low_stock" :key="variant.id">
