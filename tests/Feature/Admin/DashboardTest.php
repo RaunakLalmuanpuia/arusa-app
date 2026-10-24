@@ -4,6 +4,7 @@ use App\Enums\FulfilmentStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 
@@ -43,6 +44,7 @@ test('the dashboard lists active variants with three or fewer in stock, lowest f
     $edge = ProductVariant::factory()->create(['stock' => 3]);
     ProductVariant::factory()->create(['stock' => 4]);
     ProductVariant::factory()->create(['stock' => 0, 'is_active' => false]);
+    ProductVariant::factory()->for(Product::factory()->create(['is_active' => false]))->create(['stock' => 1]);
 
     $this->actingAs($this->admin)->get('/admin')
         ->assertInertia(fn ($page) => $page
@@ -58,6 +60,7 @@ test('revenue counts paid orders placed in the last 7 and 30 days', function () 
     Order::factory()->create(['payment_status' => PaymentStatus::Paid, 'total' => 80000, 'placed_at' => now()->subDays(40)]);
     Order::factory()->create(['payment_status' => PaymentStatus::Refunded, 'total' => 160000]);
     Order::factory()->create(['total' => 320000]);
+    Order::factory()->create(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Cancelled, 'total' => 640000]);
 
     $this->actingAs($this->admin)->get('/admin')
         ->assertInertia(fn ($page) => $page

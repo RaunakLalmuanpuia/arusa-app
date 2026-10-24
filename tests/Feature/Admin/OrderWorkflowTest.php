@@ -178,3 +178,12 @@ test('a payment from another order is not found', function () {
         ->post(route('admin.orders.payments.refund', [$order, $other]))
         ->assertNotFound();
 });
+
+test('non-admins cannot change, cancel or refund orders', function () {
+    $order = paidOnlineOrder(['fulfilment_status' => FulfilmentStatus::Cancelled]);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->put(route('admin.orders.status.update', $order), ['status' => 'packed'])->assertForbidden();
+    $this->actingAs($user)->post(route('admin.orders.cancel', $order))->assertForbidden();
+    $this->actingAs($user)->post(route('admin.orders.payments.refund', [$order, $order->mainPayment()]))->assertForbidden();
+});

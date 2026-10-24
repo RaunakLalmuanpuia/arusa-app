@@ -36,6 +36,7 @@ class DashboardController extends Controller
             ],
             'low_stock' => ProductVariant::with('product:id,name')
                 ->where('is_active', true)
+                ->whereRelation('product', 'is_active', true)
                 ->where('stock', '<=', 3)
                 ->orderBy('stock')
                 ->orderBy('id')
@@ -62,6 +63,7 @@ class DashboardController extends Controller
     private function revenueSince(int $days): int
     {
         return (int) Order::where('payment_status', PaymentStatus::Paid)
+            ->where('fulfilment_status', '!=', FulfilmentStatus::Cancelled)
             ->where('placed_at', '>=', today()->subDays($days))
             ->sum('total');
     }
