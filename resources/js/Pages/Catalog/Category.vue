@@ -18,6 +18,10 @@ const props = defineProps({
 const query = reactive({ gender: null, size: null, colour: null, min: null, max: null, ...props.filters });
 
 const apply = () => {
+    if (query.min !== null && query.min !== '' && query.max !== null && query.max !== '' && Number(query.min) > Number(query.max)) {
+        [query.min, query.max] = [query.max, query.min];
+    }
+
     // An empty gender (All) is sent on purpose: it clears the remembered pick.
     const params = { ...Object.fromEntries(Object.entries(query).filter(([, value]) => value !== null && value !== '')), gender: query.gender ?? '' };
     router.get(route('categories.show', props.category.slug), params, { preserveState: true, preserveScroll: true, replace: true });

@@ -41,8 +41,8 @@ class CategoryController extends Controller
                 ->where('stock', '>', 0)
                 ->when($filters['size'] ?? null, fn (Builder $q, string $size) => $q->where('size', $size))
                 ->when($filters['colour'] ?? null, fn (Builder $q, string $colour) => $q->where('colour', $colour))
-                ->when($filters['min'] ?? null, fn (Builder $q, $min) => $q->whereRaw('coalesce(price_override, products.base_price) >= ?', [(int) $min * 100]))
-                ->when($filters['max'] ?? null, fn (Builder $q, $max) => $q->whereRaw('coalesce(price_override, products.base_price) <= ?', [(int) $max * 100]))))
+                ->when(isset($filters['min']), fn (Builder $q) => $q->whereRaw('coalesce(price_override, products.base_price) >= ?', [(int) $filters['min'] * 100]))
+                ->when(isset($filters['max']), fn (Builder $q) => $q->whereRaw('coalesce(price_override, products.base_price) <= ?', [(int) $filters['max'] * 100]))))
             ->withCardData($filters['colour'] ?? null)
             ->latest()
             ->get();

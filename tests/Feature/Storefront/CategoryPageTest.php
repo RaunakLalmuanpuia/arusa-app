@@ -57,6 +57,8 @@ test('the price filter uses the effective variant price in rupees', function () 
 
     $this->get('/categories/apparel?max=600')
         ->assertInertia(fn ($page) => $page->has('products', 1)->where('products.0.slug', $cheap->slug));
+
+    $this->get('/categories/apparel?max=0')->assertInertia(fn ($page) => $page->has('products', 0));
 });
 
 test('inactive categories are not found', function () {
