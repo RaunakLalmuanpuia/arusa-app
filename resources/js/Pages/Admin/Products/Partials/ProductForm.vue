@@ -1,9 +1,7 @@
 <script setup>
-import Checkbox from '@/Components/Checkbox.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import FormField from '@/Components/Admin/FormField.vue';
+import FormSection from '@/Components/Admin/FormSection.vue';
+import SaveBar from '@/Components/Admin/SaveBar.vue';
 
 defineProps({
     form: { type: Object, required: true },
@@ -15,61 +13,46 @@ defineEmits(['submit']);
 </script>
 
 <template>
-    <form class="max-w-3xl space-y-6 rounded bg-white p-6 shadow-sm" @submit.prevent="$emit('submit')">
-        <div>
-            <InputLabel for="name" value="Name" />
-            <TextInput id="name" v-model="form.name" class="mt-1 block w-full" required />
-            <InputError class="mt-2" :message="form.errors.name" />
+    <form @submit.prevent="$emit('submit')">
+        <div class="admin-card divide-y divide-brand-100">
+            <FormSection title="Details" description="Name, address and where the product is listed.">
+                <FormField label="Name" for="name" :error="form.errors.name">
+                    <input id="name" v-model="form.name" class="admin-field" required />
+                </FormField>
+                <FormField label="URL slug" for="slug" hint="e.g. wolf-badge-tee" :error="form.errors.slug">
+                    <input id="slug" v-model="form.slug" class="admin-field" required />
+                </FormField>
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <FormField label="Category" for="category_id" :error="form.errors.category_id">
+                        <select id="category_id" v-model="form.category_id" class="admin-field" required>
+                            <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.label }}</option>
+                        </select>
+                    </FormField>
+                    <FormField label="Gender" for="gender" :error="form.errors.gender">
+                        <select id="gender" v-model="form.gender" class="admin-field">
+                            <option :value="null">None (not clothing)</option>
+                            <option v-for="gender in genders" :key="gender.value" :value="gender.value">{{ gender.label }}</option>
+                        </select>
+                    </FormField>
+                </div>
+            </FormSection>
+            <FormSection title="Pricing">
+                <FormField label="Price (₹)" for="base_price" hint="Variants can override this price." :error="form.errors.base_price">
+                    <input id="base_price" v-model="form.base_price" type="number" min="1" step="0.01" class="admin-field w-40" required />
+                </FormField>
+            </FormSection>
+            <FormSection title="Description">
+                <FormField label="Description" for="description" :error="form.errors.description">
+                    <textarea id="description" v-model="form.description" rows="6" class="admin-field" />
+                </FormField>
+            </FormSection>
+            <FormSection title="Visibility">
+                <label class="flex items-center gap-3 text-sm">
+                    <input v-model="form.is_active" type="checkbox" class="admin-checkbox" />
+                    Visible on the store
+                </label>
+            </FormSection>
         </div>
-        <div>
-            <InputLabel for="slug" value="URL slug (e.g. wolf-badge-tee)" />
-            <TextInput id="slug" v-model="form.slug" class="mt-1 block w-full" required />
-            <InputError class="mt-2" :message="form.errors.slug" />
-        </div>
-        <div>
-            <InputLabel for="category_id" value="Category" />
-            <select
-                id="category_id"
-                v-model="form.category_id"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                required
-            >
-                <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.label }}</option>
-            </select>
-            <InputError class="mt-2" :message="form.errors.category_id" />
-        </div>
-        <div>
-            <InputLabel for="gender" value="Gender" />
-            <select
-                id="gender"
-                v-model="form.gender"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-60"
-            >
-                <option :value="null">None (not clothing)</option>
-                <option v-for="gender in genders" :key="gender.value" :value="gender.value">{{ gender.label }}</option>
-            </select>
-            <InputError class="mt-2" :message="form.errors.gender" />
-        </div>
-        <div>
-            <InputLabel for="base_price" value="Price (₹)" />
-            <TextInput id="base_price" v-model="form.base_price" type="number" min="1" step="0.01" class="mt-1 block w-40" required />
-            <p class="mt-1 text-xs text-gray-500">Variants can override this price.</p>
-            <InputError class="mt-2" :message="form.errors.base_price" />
-        </div>
-        <div>
-            <InputLabel for="description" value="Description" />
-            <textarea
-                id="description"
-                v-model="form.description"
-                rows="6"
-                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
-            <InputError class="mt-2" :message="form.errors.description" />
-        </div>
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-            <Checkbox v-model:checked="form.is_active" />
-            Visible on the store
-        </label>
-        <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
+        <SaveBar :form="form" />
     </form>
 </template>
