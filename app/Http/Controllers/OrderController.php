@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
+use App\Models\OrderEvent;
 use App\Models\OrderItem;
 use App\Services\Razorpay;
 use Illuminate\Support\Facades\URL;
@@ -18,7 +19,7 @@ class OrderController extends Controller
      */
     public function show(Order $order, Razorpay $razorpay): Response
     {
-        $order->load('items');
+        $order->load(['items', 'events']);
 
         return Inertia::render('Orders/Show', [
             'order' => [
@@ -42,6 +43,13 @@ class OrderController extends Controller
                     'line_total' => $item->lineTotal(),
                 ]),
             ],
+            'timeline' => $order->events
+                ->reject(fn (OrderEvent $event, int $index): bool => $index > 0 && $order->events[$index - 1]->fulfilment_status === $event->fulfilment_status)
+                ->values()
+                ->map(fn (OrderEvent $event): array => [
+                    'status' => $event->fulfilment_status->label(),
+                    'at' => $event->created_at->format('j M Y, g:i a'),
+                ]),
             'just_placed' => (bool) session('order_placed'),
             'pays_on_delivery' => $order->payment_method === PaymentMethod::Cod,
             'payment' => $order->payment_method === PaymentMethod::Razorpay && $order->payment_status === PaymentStatus::AwaitingPayment

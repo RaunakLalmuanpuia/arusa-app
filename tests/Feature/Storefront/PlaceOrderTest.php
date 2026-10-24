@@ -243,6 +243,19 @@ test('the order page needs a valid signature', function () {
             ->where('just_placed', false));
 });
 
+test('the order page shows the fulfilment timeline without payment-only changes', function () {
+    $order = Order::factory()->create();
+    $order->update(['payment_status' => PaymentStatus::Paid]);
+    $order->update(['fulfilment_status' => FulfilmentStatus::Packed]);
+
+    $this->get($order->trackingUrl())
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('timeline', 2)
+            ->where('timeline.0.status', 'Confirmed')
+            ->where('timeline.1.status', 'Packed'));
+});
+
 test('a checkout is refused while another one is in flight for the same session', function () {
     $sessionId = Str::random(40);
     $lock = Cache::lock('checkout:'.$sessionId, 10);

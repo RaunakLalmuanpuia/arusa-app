@@ -6,6 +6,7 @@ import { formatPaise } from '@/money';
 
 const props = defineProps({
     order: { type: Object, required: true },
+    timeline: { type: Array, required: true },
     just_placed: { type: Boolean, required: true },
     pays_on_delivery: { type: Boolean, required: true },
     payment: { type: Object, default: null },
@@ -146,6 +147,17 @@ onMounted(() => {
                     <dd class="mt-1 whitespace-pre-line">{{ order.tracking_note }}</dd>
                 </div>
             </dl>
+
+            <div class="mt-6 text-sm">
+                <h2 class="text-xs uppercase tracking-[0.2em] text-brand-600">Progress</h2>
+                <ol class="mt-3 space-y-3 border-l border-brand-300 pl-4">
+                    <li v-for="(step, index) in timeline" :key="index" class="relative">
+                        <span class="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full" :class="index === timeline.length - 1 ? 'bg-ink' : 'bg-brand-300'" aria-hidden="true" />
+                        <p :class="index === timeline.length - 1 ? 'font-medium' : 'text-brand-700'">{{ step.status }}</p>
+                        <p class="text-xs text-brand-600">{{ step.at }}</p>
+                    </li>
+                </ol>
+            </div>
 
             <ul class="mt-6 space-y-3 text-sm">
                 <li v-for="(item, index) in order.items" :key="index" class="flex justify-between gap-4">

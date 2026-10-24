@@ -135,6 +135,13 @@ const infoLinks = [
                         {{ link.label }}
                     </Link>
                     <Link
+                        :href="route('orders.track')"
+                        class="flex min-h-11 items-center border-b border-brand-800 text-sm font-medium uppercase tracking-[0.2em] focus-ring-inverse"
+                        @click="isMenuOpen = false"
+                    >
+                        Track order
+                    </Link>
+                    <Link
                         v-if="page.props.auth.user?.is_admin"
                         :href="route('admin.dashboard')"
                         class="flex min-h-11 items-center text-sm font-medium uppercase tracking-[0.2em] text-brand-200 focus-ring-inverse"
@@ -187,6 +194,12 @@ const infoLinks = [
                         class="flex min-h-11 items-center rounded text-xs uppercase tracking-[0.2em] hover:text-brand-50 focus-ring-inverse"
                     >
                         {{ link.label }}
+                    </Link>
+                    <Link
+                        :href="route('orders.track')"
+                        class="flex min-h-11 items-center rounded text-xs uppercase tracking-[0.2em] hover:text-brand-50 focus-ring-inverse"
+                    >
+                        Track order
                     </Link>
                 </nav>
             </div>
