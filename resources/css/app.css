@@ -30,10 +30,6 @@
 @keyframes rule-draw { from { transform: scaleX(0); } }
 @keyframes marquee { to { transform: translateX(-50%); } }
 
-@media (prefers-reduced-motion: no-preference) {
-    html { scroll-behavior: smooth; }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1; transform: none; transition: none; }
     .animate-rise-in, .animate-rule-draw, .animate-marquee { animation: none; }
