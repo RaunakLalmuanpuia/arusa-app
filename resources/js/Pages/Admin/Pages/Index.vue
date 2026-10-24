@@ -1,6 +1,8 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
+import IconPlus from '@/Components/Icons/IconPlus.vue';
 
 defineProps({
     pages: { type: Array, required: true },
@@ -18,36 +20,28 @@ const deletePage = (page) => {
 
     <AdminLayout>
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="text-xl font-semibold text-gray-900">Pages</h1>
-                <Link :href="route('admin.pages.create')" class="rounded bg-gray-800 px-3 py-2 text-sm font-medium text-white">New page</Link>
-            </div>
+            <PageHeader title="Pages">
+                <template #actions>
+                    <Link :href="route('admin.pages.create')" class="admin-btn">
+                        <IconPlus class="h-4 w-4" />
+                        New page
+                    </Link>
+                </template>
+            </PageHeader>
         </template>
 
-        <div class="overflow-x-auto rounded bg-white shadow-sm">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b text-gray-500">
-                    <tr>
-                        <th class="px-4 py-3 font-medium">Title</th>
-                        <th class="px-4 py-3 font-medium">URL</th>
-                        <th class="px-4 py-3" />
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="page in pages" :key="page.id" class="border-b last:border-0">
-                        <td class="px-4 py-3">
-                            <Link :href="route('admin.pages.edit', page.id)" class="font-medium text-gray-900 hover:underline">{{ page.title }}</Link>
-                        </td>
-                        <td class="px-4 py-3 text-gray-500">/pages/{{ page.slug }}</td>
-                        <td class="px-4 py-3 text-right">
-                            <button type="button" class="text-red-600 hover:underline" @click="deletePage(page)">Delete</button>
-                        </td>
-                    </tr>
-                    <tr v-if="pages.length === 0">
-                        <td colspan="3" class="px-4 py-6 text-center text-gray-500">No pages yet.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <ul v-if="pages.length" class="admin-card divide-y divide-brand-100">
+            <li v-for="page in pages" :key="page.id" class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <div class="min-w-0">
+                    <Link :href="route('admin.pages.edit', page.id)" class="focus-ring rounded font-medium text-ink hover:underline">{{ page.title }}</Link>
+                    <p class="truncate font-mono text-xs text-brand-500">/pages/{{ page.slug }}</p>
+                </div>
+                <div class="flex gap-1">
+                    <a :href="route('pages.show', page.slug)" target="_blank" rel="noopener" class="admin-btn-secondary min-h-8 px-3">View</a>
+                    <button type="button" class="admin-btn-danger min-h-8 px-3" @click="deletePage(page)">Delete</button>
+                </div>
+            </li>
+        </ul>
+        <div v-else class="admin-card px-4 py-12 text-center text-sm text-brand-500">No pages yet.</div>
     </AdminLayout>
 </template>
