@@ -28,7 +28,7 @@ class CancelOrder
                 return $order;
             }
 
-            if (! in_array($order->fulfilment_status, [FulfilmentStatus::Pending, FulfilmentStatus::Confirmed, FulfilmentStatus::Packed], true)) {
+            if (! $order->fulfilment_status->isCancellable()) {
                 throw ValidationException::withMessages(['order' => "This order can't be cancelled once it has been dispatched."]);
             }
 
