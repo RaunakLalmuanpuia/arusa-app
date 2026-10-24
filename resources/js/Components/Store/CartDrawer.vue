@@ -2,7 +2,7 @@
 import { nextTick, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import IconClose from '@/Components/Icons/IconClose.vue';
-import { isCartOpen } from '@/cartDrawer';
+import { closeCartForVisit, isCartOpen } from '@/cartDrawer';
 import { formatPaise } from '@/money';
 
 const page = usePage();
@@ -95,8 +95,8 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
                     <p class="mt-1 text-xs text-brand-600">Shipping is worked out at checkout.</p>
                     <p v-if="page.props.cart.has_unavailable" class="mt-2 text-xs text-red-700" role="alert">Remove the unavailable items to check out.</p>
                     <div class="mt-4 grid gap-2">
-                        <Link v-if="!page.props.cart.has_unavailable" :href="route('checkout.create')" class="flex min-h-11 items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 focus-ring" @click="close">Checkout</Link>
-                        <Link :href="route('cart.index')" class="flex min-h-11 items-center justify-center border border-ink text-xs font-medium uppercase tracking-[0.2em] focus-ring" @click="close">View bag</Link>
+                        <Link v-if="!page.props.cart.has_unavailable" :href="route('checkout.create')" class="flex min-h-11 items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 focus-ring" replace @click="closeCartForVisit">Checkout</Link>
+                        <Link :href="route('cart.index')" class="flex min-h-11 items-center justify-center border border-ink text-xs font-medium uppercase tracking-[0.2em] focus-ring" replace @click="closeCartForVisit">View bag</Link>
                     </div>
                 </div>
             </aside>
