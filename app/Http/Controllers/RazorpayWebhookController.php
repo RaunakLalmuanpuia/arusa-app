@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Services\Razorpay;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
 use UnexpectedValueException;
 
 class RazorpayWebhookController extends Controller
@@ -15,7 +16,7 @@ class RazorpayWebhookController extends Controller
     /**
      * Razorpay posts every subscribed event here. This is the source of truth for payments:
      * signature-checked, idempotent, and answered 2xx once verified so Razorpay stops retrying.
-     * The exception is a late payment whose refund fails: that error is left to surface as a non-2xx response,
+     * The exception is a late or duplicate payment whose refund fails: that is answered 503,
      * so Razorpay redelivers the event and the refund is tried again.
      */
     public function __invoke(Request $request, Razorpay $razorpay, MarkOrderPaid $markOrderPaid): Response
@@ -46,6 +47,9 @@ class RazorpayWebhookController extends Controller
             };
         } catch (UnexpectedValueException $exception) {
             report($exception);
+        } catch (ValidationException) {
+            // RefundPayment already reported the Razorpay error; a 5xx (not the default 302) makes Razorpay redeliver.
+            return response()->noContent(503);
         }
 
         return response()->noContent();

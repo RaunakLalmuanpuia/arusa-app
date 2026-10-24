@@ -60,7 +60,7 @@ Small. Write these up with writing-plans when starting.
    - a design-motion-principles audit;
    - the storefront JS budget: the app chunk was ~295 KB raw against the 200 KB target. Fix it or accept it.
 6. **Open follow-ups to triage before going live:**
-   - Webhook: a failed automatic refund of a duplicate capture throws a `ValidationException`, so Razorpay gets a 302 instead of a 5xx and may not retry. Make it return a 5xx.
+   - ~~Webhook 302 on a failed automatic refund~~: fixed after Phase 5. It now answers 503, so Razorpay redelivers.
    - Refund webhooks (`refund.processed`, `refund.failed`) are not handled.
    - The deferred Minor findings in `docs/superpowers/plans/2026-10-24-phase-5-admin-orders.md` → "Known follow-ups".
    - The Razorpay MCP (deferred since Phase 4; optional).
@@ -175,5 +175,5 @@ Small. Write these up with writing-plans when starting.
 4. **A CDN or proxy (e.g. Cloudflare) in front?** If yes, configure trusted proxies.
 5. **Error alerts:** the spec has none. Is reading the logs enough, or should we add a free option, e.g. a daily email of errors?
 6. **The JS budget** (~295 KB against 200 KB): fix it before launch or accept it?
-7. **Which of the deferred follow-ups** must be fixed before going live? At least the webhook 302 is recommended.
+7. **Which of the deferred follow-ups** must be fixed before going live?
 8. **Extra policy pages** for Razorpay KYC: who writes them?

@@ -146,7 +146,7 @@ test('a failed refund of a duplicate capture is retried on redelivery', function
         ->once()
         ->andThrow(new RazorpayException('Refund failed')));
 
-    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_B', $this->order->total))->assertRedirect();
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_B', $this->order->total))->assertStatus(503);
 
     expect(Payment::where('gateway_payment_id', 'pay_B')->sole()->status)->toBe(PaymentStatus::Paid);
 
