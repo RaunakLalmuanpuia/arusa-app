@@ -165,3 +165,19 @@ Previews reuse the real storefront components, so they always match the live sto
 - `grep -rE "Components/(TextInput|InputLabel|InputError|PrimaryButton|Checkbox|ApplicationLogo)" resources/js/Pages/Admin resources/js/Components/Admin resources/js/Layouts/AdminLayout.vue` returns nothing.
 - `npm run build` succeeds.
 - **Playwright:** every admin page at 1280 px and 390 px. Check the drawer open/close/Esc, a toast after saving a product, the save bar dirty state, the mobile card tables, the order stepper on a pending, a delivered and a cancelled order, the chart tooltip, the product preview updating as you type name/price, and the page Preview tab (rendered, 422 state). Console free of errors.
+
+## 8. Refinements found while planning
+
+These override the sections above where they differ.
+
+- Settings icon is `IconSliders` (adjustment sliders), not a cog. `IconPlus` is added for "New …" buttons.
+- `StatusBadge` also knows `active` (emerald); "Hidden" rows pass `inactive`, which falls to neutral. Boolean columns use it: `:value="row.is_active ? 'active' : 'inactive'"`.
+- `FormSection.vue` (title + description left, fields right on `md`) wraps each form group, so the forms don't repeat section markup.
+- `SaveBar` resets the form itself (`form.reset(); form.clearErrors()`); it emits nothing. It floats as a rounded bar (`sticky bottom-4`).
+- `VariantGrid` and `ImageUploader` keep their own compact `.admin-btn` save buttons (they are sub-forms; the variants button must stay disabled with zero rows). Only the main page forms use `SaveBar`.
+- `AdminTable`: the Apply button stays visible at every width; only the extra filters fold behind the "Filters" toggle.
+- `BarChart`: tooltips on hover; keyboard and screen-reader users get the visually hidden data table. The bars are not focusable (focusable children inside `role="img"` are an accessibility error).
+- Order events arrive oldest first (`events()` orders by id). The timeline keeps that order and highlights the **last** dot as the latest.
+- The `Content/Show` block rendering (default hero + `Reveal` loop) moves into `Components/Store/Blocks/PageBlocks.vue`, used by both `Content/Show` and `PagePreview`.
+- The CSRF helper `ImageField` has inline moves to `resources/js/xsrfToken.js` and is shared with `PagePreview`.
+- Toasts live in a module store (`Components/Admin/toasts.js`) fed by Inertia `success`/`error` router events, because `AdminLayout` remounts on every visit. They only fire on `/admin` paths. Error keys toasted: `status, order, payment, category, product, zone, search, from, to, payment_method, shipping_zone_id` (none is a form field name).
