@@ -1,5 +1,8 @@
 <script setup>
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import PageHeading from '@/Components/Store/PageHeading.vue';
+import Reveal from '@/Components/Store/Reveal.vue';
 import StoreLayout from '@/Layouts/StoreLayout.vue';
 import { formatPaise } from '@/money';
 
@@ -23,7 +26,7 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
 
     <StoreLayout>
         <div class="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-            <h1 class="font-display text-3xl font-semibold sm:text-4xl">Your bag</h1>
+            <PageHeading title="Your bag" />
 
             <template v-if="page.props.cart.lines.length">
                 <p v-if="page.props.cart.has_unavailable" class="mt-6 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
@@ -31,7 +34,13 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
                 </p>
 
                 <ul class="mt-6 divide-y divide-brand-200 border-y border-brand-200">
-                    <li v-for="line in page.props.cart.lines" :key="line.variant_id" class="flex gap-4 py-5">
+                    <Reveal
+                        v-for="(line, index) in page.props.cart.lines"
+                        :key="line.variant_id"
+                        as="li"
+                        :delay="Math.min(index, 4) * 75"
+                        class="flex gap-4 py-5"
+                    >
                         <Link :href="route('products.show', line.slug)" class="h-28 w-24 shrink-0 overflow-hidden bg-brand-100 focus-ring">
                             <img v-if="line.image" :src="line.image.src" :srcset="line.image.srcset" sizes="96px" :alt="line.image.alt" class="h-full w-full object-cover" />
                         </Link>
@@ -51,7 +60,7 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
                                 <button type="button" class="min-h-11 text-sm underline underline-offset-4 focus-ring" @click="remove(line)">Remove</button>
                             </div>
                         </div>
-                    </li>
+                    </Reveal>
                 </ul>
 
                 <div class="mt-6 flex flex-col items-stretch gap-4 sm:items-end">
@@ -60,19 +69,23 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
                         <span class="tabular-nums">{{ formatPaise(page.props.cart.subtotal) }}</span>
                     </p>
                     <p class="text-xs text-brand-600">Shipping is worked out at checkout from your pincode.</p>
-                    <Link
-                        v-if="!page.props.cart.has_unavailable && page.props.cart.count"
-                        :href="route('checkout.create')"
-                        class="flex min-h-12 items-center justify-center bg-ink px-12 text-xs font-medium uppercase tracking-[0.2em] text-brand-50 focus-ring"
-                    >
-                        Checkout
-                    </Link>
+                    <div class="flex flex-col-reverse items-stretch gap-4 sm:flex-row sm:items-center">
+                        <Link :href="route('home')" class="store-link inline-flex min-h-11 items-center justify-center">Continue shopping</Link>
+                        <Link
+                            v-if="!page.props.cart.has_unavailable && page.props.cart.count"
+                            :href="route('checkout.create')"
+                            class="flex min-h-12 items-center justify-center bg-ink px-12 text-xs font-medium uppercase tracking-[0.2em] text-brand-50 focus-ring"
+                        >
+                            Checkout
+                        </Link>
+                    </div>
                 </div>
             </template>
 
-            <div v-else class="mt-12 text-center">
-                <p class="text-brand-700">Your bag is empty.</p>
-                <Link :href="route('home')" class="mt-4 inline-flex min-h-11 items-center underline underline-offset-4 focus-ring">Continue shopping</Link>
+            <div v-else class="mt-12 flex flex-col items-center text-center">
+                <ApplicationLogo class="h-16 w-16" />
+                <p class="mt-6 text-brand-700">Your bag is empty.</p>
+                <Link :href="route('home') + '#new-in'" class="store-link mt-4 inline-flex min-h-11 items-center">Shop new in</Link>
             </div>
         </div>
     </StoreLayout>
