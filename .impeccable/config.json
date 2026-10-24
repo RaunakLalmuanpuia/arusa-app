@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "resources/js/Pages/Admin/Orders/Show.vue"
+        ],
+        "createdAt": "2026-10-24T16:54:24.458Z",
+        "reason": "User confirmed dense admin type scale is intentional"
+      }
+    ]
+  }
+}

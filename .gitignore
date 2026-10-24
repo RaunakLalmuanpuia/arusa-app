@@ -28,3 +28,4 @@ Thumbs.db
 /graphify-out
 /.claude/settings.local.json
 .playwright-mcp/
+/.impeccable/hook.cache.json
