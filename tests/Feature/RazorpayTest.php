@@ -35,6 +35,10 @@ test('Razorpay counts as configured only with both keys', function () {
     config(['services.razorpay.key_secret' => null]);
 
     expect(app(Razorpay::class)->isConfigured())->toBeFalse();
+
+    config(['services.razorpay.key_secret' => 'test_secret', 'services.razorpay.key_id' => null]);
+
+    expect(app(Razorpay::class)->isConfigured())->toBeFalse();
 });
 
 test('an order keeps its payment attempts in order', function () {

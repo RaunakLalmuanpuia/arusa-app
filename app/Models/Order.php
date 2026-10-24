@@ -56,6 +56,9 @@ class Order extends Model
         });
     }
 
+    /**
+     * Add a timeline row with the order's current statuses and the signed-in user, if any.
+     */
     private function recordEvent(): void
     {
         $this->events()->create([
@@ -143,10 +146,23 @@ class Order extends Model
     }
 
     /**
+     * The payment row created when the order was placed, holding its one Razorpay order.
+     */
+    public function placementPayment(): ?Payment
+    {
+        return $this->payments()->first();
+    }
+
+    /**
      * The captured payment the order was paid with: the oldest paid or refunded one. A later capture is a duplicate.
      */
     public function mainPayment(): ?Payment
     {
+        if ($this->relationLoaded('payments')) {
+            return $this->payments->first(fn (Payment $payment): bool => in_array($payment->status, [PaymentStatus::Paid, PaymentStatus::Refunded], true)
+                && $payment->gateway_payment_id !== null);
+        }
+
         return $this->payments()
             ->whereIn('status', [PaymentStatus::Paid, PaymentStatus::Refunded])
             ->whereNotNull('gateway_payment_id')
@@ -160,6 +176,7 @@ class Order extends Model
     public function isRefundable(Payment $payment): bool
     {
         return $payment->status === PaymentStatus::Paid
+            && $payment->gateway_payment_id !== null
             && ($this->fulfilment_status === FulfilmentStatus::Cancelled || ! $payment->is($this->mainPayment()));
     }
 }

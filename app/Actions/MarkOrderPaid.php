@@ -30,9 +30,9 @@ class MarkOrderPaid
 
         $outcome = DB::transaction(function () use ($order, $gatewayOrderId, $paymentId, $amount, $payload, &$duplicatePayment): string {
             $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            $payment = $order->payments()->where('gateway_order_id', $gatewayOrderId)->oldest('id')->first();
+            $payment = $order->placementPayment();
 
-            if (! $payment || $payment->amount !== $amount) {
+            if (! $payment || $payment->gateway_order_id !== $gatewayOrderId || $payment->amount !== $amount) {
                 throw new UnexpectedValueException("Payment {$paymentId} does not match order {$order->number}.");
             }
 

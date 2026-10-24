@@ -87,3 +87,11 @@ test('the refund owed filter finds a second capture on one order', function () {
 test('an unknown status filter is rejected', function () {
     $this->actingAs($this->admin)->get('/admin/orders?status=lost')->assertSessionHasErrors('status');
 });
+
+test('a date range that ends before it starts is rejected', function () {
+    $this->actingAs($this->admin)->get('/admin/orders?from=2026-10-10&to=2026-10-01')->assertSessionHasErrors('to');
+});
+
+test('an unknown zone filter is rejected', function () {
+    $this->actingAs($this->admin)->get('/admin/orders?shipping_zone_id=999999')->assertSessionHasErrors('shipping_zone_id');
+});

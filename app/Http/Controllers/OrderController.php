@@ -47,7 +47,7 @@ class OrderController extends Controller
             'payment' => $order->payment_method === PaymentMethod::Razorpay && $order->payment_status === PaymentStatus::AwaitingPayment
                 ? [
                     'key' => $razorpay->keyId(),
-                    'gateway_order_id' => $order->payments()->oldest('id')->value('gateway_order_id'),
+                    'gateway_order_id' => $order->placementPayment()?->gateway_order_id,
                     'amount' => $order->total,
                     'verify_url' => URL::signedRoute('orders.payment.store', $order),
                     'prefill' => ['name' => $order->customer_name, 'contact' => $order->customer_phone, 'email' => (string) $order->customer_email],

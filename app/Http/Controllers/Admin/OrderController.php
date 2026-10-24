@@ -35,9 +35,9 @@ class OrderController extends Controller
                 'search' => ['nullable', 'string', 'max:100'],
                 'status' => ['nullable', Rule::in([...array_column(FulfilmentStatus::cases(), 'value'), 'refund_owed'])],
                 'payment_method' => ['nullable', Rule::enum(PaymentMethod::class)],
-                'shipping_zone_id' => ['nullable', 'integer'],
+                'shipping_zone_id' => ['nullable', 'integer', 'exists:shipping_zones,id'],
                 'from' => ['nullable', 'date_format:Y-m-d'],
-                'to' => ['nullable', 'date_format:Y-m-d'],
+                'to' => ['nullable', 'date_format:Y-m-d', ...($request->filled('from') ? ['after_or_equal:from'] : [])],
             ]),
         ];
         $filters['shipping_zone_id'] = $filters['shipping_zone_id'] ? (int) $filters['shipping_zone_id'] : null;

@@ -61,8 +61,7 @@ Small. Write these up with writing-plans when starting.
    - the storefront JS budget: the app chunk was ~295 KB raw against the 200 KB target. Fix it or accept it.
 6. **Open follow-ups to triage before going live:**
    - ~~Webhook 302 on a failed automatic refund~~: fixed after Phase 5. It now answers 503, so Razorpay redelivers.
-   - Refund webhooks (`refund.processed`, `refund.failed`) are not handled.
-   - The deferred Minor findings in `docs/superpowers/plans/2026-10-24-phase-5-admin-orders.md` → "Known follow-ups".
+   - Fixed on 2026-10-24: refund webhooks are now handled, and most deferred Minor findings are cleared. See the "follow-ups" commit for what was left and why.
    - The Razorpay MCP (deferred since Phase 4; optional).
 
 ---
@@ -120,7 +119,7 @@ Small. Write these up with writing-plans when starting.
    3. Gmail allows about 500 emails a day; fine at launch volume.
 5. **Razorpay live:**
    1. After KYC approval, generate the **live** keys and put them in `.env`.
-   2. In **Live Mode**, create a webhook to `https://arusa.co.in/webhooks/razorpay` with its own secret. Events: `payment.captured`, `payment.failed`.
+   2. In **Live Mode**, create a webhook to `https://arusa.co.in/webhooks/razorpay` with its own secret. Events: `payment.captured`, `payment.failed`, `refund.processed`, `refund.failed`. Also add the two refund events to the Test Mode webhook.
    3. Keep payment capture on Automatic.
    4. Pay a small real order with UPI, then cancel it in admin to check that the refund goes through.
 

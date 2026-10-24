@@ -150,11 +150,13 @@ test('an online payment order reserves the stock and waits for payment', functio
     $order = Order::sole();
     $response->assertRedirect($order->trackingUrl())->assertSessionMissing('cart');
 
+    $payment = $order->payments()->sole();
+
     expect($order->payment_status)->toBe(PaymentStatus::AwaitingPayment)
         ->and($order->fulfilment_status)->toBe(FulfilmentStatus::Pending)
-        ->and($order->payments()->sole()->only('gateway_order_id', 'amount'))->toBe(['gateway_order_id' => 'order_TEST1', 'amount' => 103900])
-        ->and($order->payments()->sole()->status)->toBe(PaymentStatus::AwaitingPayment)
-        ->and($order->payments()->sole()->payload['order']['id'])->toBe('order_TEST1')
+        ->and($payment->only('gateway_order_id', 'amount'))->toBe(['gateway_order_id' => 'order_TEST1', 'amount' => 103900])
+        ->and($payment->status)->toBe(PaymentStatus::AwaitingPayment)
+        ->and($payment->payload['order']['id'])->toBe('order_TEST1')
         ->and($this->tee->fresh()->stock)->toBe(4);
     Mail::assertNothingQueued();
 });
@@ -171,6 +173,19 @@ test('a Razorpay failure rolls the whole order back', function () {
 
     expect(Order::count())->toBe(0)
         ->and(Payment::count())->toBe(0)
+        ->and($this->tee->fresh()->stock)->toBe(5);
+});
+
+test('a Razorpay order without an id rolls the whole order back', function () {
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('createOrder')
+        ->once()
+        ->andReturn(['status' => 'created']));
+
+    $this->withSession(['cart' => [$this->tee->id => 2]])
+        ->post('/checkout', checkoutPayload(['payment_method' => 'razorpay']))
+        ->assertSessionHasErrors('payment_method');
+
+    expect(Order::count())->toBe(0)
         ->and($this->tee->fresh()->stock)->toBe(5);
 });
 

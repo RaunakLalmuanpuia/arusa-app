@@ -187,3 +187,24 @@ test('non-admins cannot change, cancel or refund orders', function () {
     $this->actingAs($user)->post(route('admin.orders.cancel', $order))->assertForbidden();
     $this->actingAs($user)->post(route('admin.orders.payments.refund', [$order, $order->mainPayment()]))->assertForbidden();
 });
+
+test('a cancelled order with a duplicate capture offers a refund on both payments', function () {
+    $order = paidOnlineOrder(['fulfilment_status' => FulfilmentStatus::Cancelled]);
+    Payment::factory()->paid()->for($order)->create(['gateway_payment_id' => 'pay_DUP', 'amount' => $order->total]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.orders.show', $order))
+        ->assertInertia(fn ($page) => $page
+            ->where('payments.0.refundable', true)
+            ->where('payments.1.refundable', true));
+});
+
+test('an already refunded payment cannot be refunded again', function () {
+    $order = paidOnlineOrder(['fulfilment_status' => FulfilmentStatus::Cancelled, 'payment_status' => PaymentStatus::Refunded]);
+    $order->mainPayment()->update(['status' => PaymentStatus::Refunded]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldNotReceive('refund'));
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.orders.payments.refund', [$order, $order->payments()->first()]))
+        ->assertSessionHasErrors('payment');
+});

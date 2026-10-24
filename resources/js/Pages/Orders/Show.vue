@@ -120,6 +120,9 @@ onMounted(() => {
                     {{ opening ? 'Opening payment…' : `Pay ${formatPaise(payment.amount)}` }}
                 </button>
             </section>
+            <p v-else-if="paymentMessage" class="mb-8 border border-brand-300 bg-brand-100 px-4 py-3 text-sm" role="status">
+                {{ paymentMessage }}
+            </p>
             <p v-else-if="order.fulfilment_status === 'Cancelled' && order.payment_status === 'Failed'" class="mb-8 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status">
                 This order was cancelled because the payment wasn't completed.
             </p>

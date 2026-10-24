@@ -52,7 +52,7 @@ const refund = (payment) => {
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <a :href="route('admin.orders.slip', order.id)" target="_blank" class="rounded border bg-white px-3 py-2 text-sm font-medium text-gray-700">Print slip</a>
+                    <a :href="route('admin.orders.slip', order.id)" target="_blank" rel="noopener" class="rounded border bg-white px-3 py-2 text-sm font-medium text-gray-700">Print slip</a>
                     <a :href="whatsapp_url" target="_blank" rel="noopener" class="rounded border bg-white px-3 py-2 text-sm font-medium text-gray-700">Message customer</a>
                 </div>
             </div>

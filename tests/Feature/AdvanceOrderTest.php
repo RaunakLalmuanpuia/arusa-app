@@ -88,6 +88,6 @@ test('no email is sent without a customer email', function () {
 test('the emails render with the tracking link', function () {
     $order = Order::factory()->create(['fulfilment_status' => FulfilmentStatus::Dispatched, 'tracking_note' => 'Bus parcel']);
 
-    expect((new OrderDispatched($order))->render())->toContain($order->number)->toContain('Bus parcel')
+    expect((new OrderDispatched($order))->render())->toContain($order->number)->toContain('Bus parcel')->toContain(e($order->trackingUrl()))
         ->and((new OrderDelivered($order))->render())->toContain($order->number);
 });

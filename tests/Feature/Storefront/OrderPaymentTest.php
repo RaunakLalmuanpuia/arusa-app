@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\Razorpay;
+use App\Services\RazorpayException;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Testing\TestResponse;
@@ -85,6 +86,33 @@ test('a payment that lands after the order was cancelled is refunded', function 
         ->and($order->payment_status)->toBe(PaymentStatus::Refunded)
         ->and($this->payment->fresh()->status)->toBe(PaymentStatus::Refunded);
     Mail::assertNothingQueued();
+});
+
+test('a shopper whose payment lands after the order was cancelled is told it is being refunded', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Failed, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
+    $this->payment->update(['status' => PaymentStatus::Failed]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->andReturn(['id' => 'rfnd_TEST1', 'status' => 'processed']));
+
+    confirmPayment($this->order)
+        ->assertRedirect($this->order->trackingUrl())
+        ->assertSessionHas('payment_error', fn (string $message) => str_contains($message, 'refunded'))
+        ->assertSessionHas('payment_confirmed', false);
+});
+
+test('a late payment whose refund fails still brings the shopper back to the order page', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Failed, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
+    $this->payment->update(['status' => PaymentStatus::Failed]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->andThrow(new RazorpayException('Refund failed')));
+
+    confirmPayment($this->order)
+        ->assertRedirect($this->order->trackingUrl())
+        ->assertSessionHas('payment_error', fn (string $message) => str_contains($message, 'refunded'));
+
+    expect($this->payment->fresh()->status)->toBe(PaymentStatus::Paid);
 });
 
 test('a late payment whose refund failed is refunded on the next delivery', function () {

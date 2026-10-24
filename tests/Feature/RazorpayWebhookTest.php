@@ -85,7 +85,8 @@ test('events for other Razorpay orders and other event types are acknowledged an
     postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_OTHER', 100, 'order_UNKNOWN'))->assertNoContent();
     postRazorpayWebhook(['entity' => 'event', 'event' => 'order.paid', 'payload' => []])->assertNoContent();
 
-    expect($this->order->fresh()->payment_status)->toBe(PaymentStatus::AwaitingPayment);
+    expect($this->order->fresh()->payment_status)->toBe(PaymentStatus::AwaitingPayment)
+        ->and(Payment::count())->toBe(1);
 });
 
 test('a capture for the wrong amount is reported and ignored', function () {
@@ -158,4 +159,87 @@ test('a failed refund of a duplicate capture is retried on redelivery', function
     postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_B', $this->order->total))->assertNoContent();
 
     expect(Payment::where('gateway_payment_id', 'pay_B')->sole()->status)->toBe(PaymentStatus::Refunded);
+});
+
+test('a capture after the order was cancelled is refunded and the order stays cancelled', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Failed, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
+    $this->payment->update(['status' => PaymentStatus::Failed]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->with('pay_LATE', $this->order->total)
+        ->andReturn(['id' => 'rfnd_LATE', 'status' => 'processed']));
+
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_LATE', $this->order->total))->assertNoContent();
+
+    expect($this->order->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Cancelled)
+        ->and($this->order->fresh()->payment_status)->toBe(PaymentStatus::Refunded);
+});
+
+test('a late capture whose refund fails is answered 503 so Razorpay redelivers', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Failed, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
+    $this->payment->update(['status' => PaymentStatus::Failed]);
+    $this->partialMock(Razorpay::class, fn (MockInterface $mock) => $mock->shouldReceive('refund')
+        ->once()
+        ->andThrow(new RazorpayException('Refund failed')));
+
+    postRazorpayWebhook(razorpayEvent('payment.captured', 'pay_LATE', $this->order->total))->assertStatus(503);
+
+    expect($this->payment->fresh()->status)->toBe(PaymentStatus::Paid);
+});
+
+/**
+ * @return array<string, mixed>
+ */
+function razorpayRefundEvent(string $event, string $paymentId): array
+{
+    return [
+        'entity' => 'event',
+        'event' => $event,
+        'payload' => ['refund' => ['entity' => [
+            'id' => 'rfnd_TEST1',
+            'entity' => 'refund',
+            'payment_id' => $paymentId,
+            'amount' => 104900,
+            'status' => $event === 'refund.processed' ? 'processed' : 'failed',
+        ]]],
+    ];
+}
+
+test('a failed refund puts the money back as owed so the admin can retry', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Refunded, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
+    $this->payment->update(['gateway_payment_id' => 'pay_A', 'status' => PaymentStatus::Refunded]);
+
+    postRazorpayWebhook(razorpayRefundEvent('refund.failed', 'pay_A'))->assertNoContent();
+
+    expect($this->payment->fresh()->status)->toBe(PaymentStatus::Paid)
+        ->and($this->payment->fresh()->payload['refund']['status'])->toBe('failed')
+        ->and($this->order->fresh()->payment_status)->toBe(PaymentStatus::Paid)
+        ->and(Order::refundOwed()->pluck('id')->all())->toBe([$this->order->id]);
+});
+
+test('a failed refund of a duplicate capture leaves the order paid', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Confirmed]);
+    $this->payment->update(['gateway_payment_id' => 'pay_A', 'status' => PaymentStatus::Paid]);
+    $duplicate = Payment::factory()->for($this->order)->create(['gateway_payment_id' => 'pay_B', 'status' => PaymentStatus::Refunded]);
+
+    postRazorpayWebhook(razorpayRefundEvent('refund.failed', 'pay_B'))->assertNoContent();
+
+    expect($duplicate->fresh()->status)->toBe(PaymentStatus::Paid)
+        ->and($this->order->fresh()->payment_status)->toBe(PaymentStatus::Paid);
+});
+
+test('a processed refund is recorded on the payment', function () {
+    $this->order->update(['payment_status' => PaymentStatus::Refunded, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
+    $this->payment->update(['gateway_payment_id' => 'pay_A', 'status' => PaymentStatus::Refunded]);
+
+    postRazorpayWebhook(razorpayRefundEvent('refund.processed', 'pay_A'))->assertNoContent();
+
+    expect($this->payment->fresh()->status)->toBe(PaymentStatus::Refunded)
+        ->and($this->payment->fresh()->payload['refund']['status'])->toBe('processed');
+});
+
+test('a refund event for an unknown payment is acknowledged and ignored', function () {
+    postRazorpayWebhook(razorpayRefundEvent('refund.failed', 'pay_UNKNOWN'))->assertNoContent();
+
+    expect($this->payment->fresh()->status)->toBe(PaymentStatus::AwaitingPayment);
 });

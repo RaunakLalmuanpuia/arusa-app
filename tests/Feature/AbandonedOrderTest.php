@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CancelOrder;
 use App\Enums\FulfilmentStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
@@ -7,12 +8,14 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Exceptions;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     $this->variant = ProductVariant::factory()->create(['stock' => 0]);
 });
 
-function unpaidOrder(int $minutesAgo): Order
+function abandonedSweepOrder(int $minutesAgo): Order
 {
     $order = Order::factory()->razorpay()->create(['placed_at' => now()->subMinutes($minutesAgo)]);
     OrderItem::factory()->for($order)->create(['product_variant_id' => test()->variant->id, 'quantity' => 2]);
@@ -22,7 +25,7 @@ function unpaidOrder(int $minutesAgo): Order
 }
 
 test('online orders left unpaid for 30 minutes are cancelled and their stock comes back', function () {
-    $order = unpaidOrder(31);
+    $order = abandonedSweepOrder(31);
 
     $this->artisan('orders:cancel-abandoned')->assertSuccessful();
 
@@ -33,8 +36,8 @@ test('online orders left unpaid for 30 minutes are cancelled and their stock com
 });
 
 test('recent, paid and cash on delivery orders are left alone', function () {
-    $recent = unpaidOrder(29);
-    $paid = unpaidOrder(45);
+    $recent = abandonedSweepOrder(29);
+    $paid = abandonedSweepOrder(45);
     $paid->update(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Confirmed]);
     $cashOnDelivery = Order::factory()->create(['placed_at' => now()->subHour()]);
 
@@ -44,6 +47,19 @@ test('recent, paid and cash on delivery orders are left alone', function () {
         ->and($paid->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Confirmed)
         ->and($cashOnDelivery->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Confirmed)
         ->and($this->variant->fresh()->stock)->toBe(0);
+});
+
+test('one order that fails to cancel does not stop the rest of the sweep', function () {
+    Exceptions::fake();
+    abandonedSweepOrder(31);
+    abandonedSweepOrder(40);
+    $this->mock(CancelOrder::class, fn (MockInterface $mock) => $mock->shouldReceive('handle')
+        ->twice()
+        ->andReturnUsing(fn () => throw new RuntimeException('Lock timeout'), fn (Order $order) => $order));
+
+    $this->artisan('orders:cancel-abandoned')->assertSuccessful();
+
+    Exceptions::assertReported(RuntimeException::class);
 });
 
 test('the sweep is scheduled every five minutes', function () {

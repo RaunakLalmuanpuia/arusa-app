@@ -116,6 +116,10 @@ class PlaceOrder
             if ($paymentMethod === PaymentMethod::Razorpay) {
                 try {
                     $gatewayOrder = $this->razorpay->createOrder($total, $order->number);
+
+                    if (! isset($gatewayOrder['id'])) {
+                        throw new RazorpayException("Razorpay returned an order without an id for {$order->number}.");
+                    }
                 } catch (RazorpayException $exception) {
                     report($exception);
 

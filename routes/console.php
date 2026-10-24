@@ -33,7 +33,11 @@ Artisan::command('orders:cancel-abandoned', function (CancelOrder $cancelOrder):
         ->get();
 
     foreach ($orders as $order) {
-        $cancelOrder->handle($order, onlyIfAwaitingPayment: true);
+        try {
+            $cancelOrder->handle($order, onlyIfAwaitingPayment: true);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     $this->info("Checked {$orders->count()} unpaid orders.");

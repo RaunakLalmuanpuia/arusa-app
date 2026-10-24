@@ -24,3 +24,15 @@ test('non-admins cannot open a packing slip', function () {
 
     $this->actingAs(User::factory()->create())->get(route('admin.orders.slip', $order))->assertForbidden();
 });
+
+test('the packing slip shows free shipping and items without a variant', function () {
+    $order = Order::factory()->create(['shipping' => 0]);
+    OrderItem::factory()->for($order)->create(['product_name' => 'Tote Bag', 'size' => null, 'colour' => null]);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.orders.slip', $order))
+        ->assertOk()
+        ->assertSee('Tote Bag')
+        ->assertDontSee('<span class="muted">(', false)
+        ->assertSee('Free');
+});

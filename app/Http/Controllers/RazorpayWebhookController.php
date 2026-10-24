@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Actions\MarkOrderPaid;
 use App\Enums\PaymentStatus;
+use App\Models\Order;
 use App\Models\Payment;
 use App\Services\Razorpay;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use UnexpectedValueException;
 
@@ -26,6 +28,12 @@ class RazorpayWebhookController extends Controller
             400,
             'Invalid signature.',
         );
+
+        if (in_array($request->input('event'), ['refund.processed', 'refund.failed'], true)) {
+            $this->recordRefundOutcome($request->input('event'), $request->input('payload.refund.entity'));
+
+            return response()->noContent();
+        }
 
         $entity = $request->input('payload.payment.entity');
 
@@ -53,6 +61,41 @@ class RazorpayWebhookController extends Controller
         }
 
         return response()->noContent();
+    }
+
+    /**
+     * Razorpay settles a refund after the API accepted it. A failed refund puts the payment back to Paid,
+     * so the order shows under "Refund owed" again and the admin can retry it.
+     */
+    private function recordRefundOutcome(string $event, mixed $refund): void
+    {
+        if (! is_array($refund) || ! isset($refund['payment_id'])) {
+            return;
+        }
+
+        $payment = Payment::firstWhere('gateway_payment_id', $refund['payment_id']);
+
+        if (! $payment) {
+            return;
+        }
+
+        DB::transaction(function () use ($event, $refund, $payment): void {
+            $order = Order::whereKey($payment->order_id)->lockForUpdate()->firstOrFail();
+            $payment->refresh();
+            $isMainPayment = $payment->is($order->mainPayment());
+
+            $payment->payload = [...($payment->payload ?? []), 'refund' => $refund];
+
+            if ($event === 'refund.failed' && $payment->status === PaymentStatus::Refunded) {
+                $payment->status = PaymentStatus::Paid;
+
+                if ($isMainPayment && $order->payment_status === PaymentStatus::Refunded) {
+                    $order->update(['payment_status' => PaymentStatus::Paid]);
+                }
+            }
+
+            $payment->save();
+        });
     }
 
     /**
