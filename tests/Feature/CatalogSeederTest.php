@@ -33,6 +33,16 @@ test('the catalog seeder attaches a photo per tee colour and one for the mug', f
         ->and($candle->images)->toHaveCount(1);
 });
 
+test('the category image seeder gives subcategories a product photo', function () {
+    Storage::fake('public');
+    $this->seed(CatalogSeeder::class);
+
+    $this->seed(CategoryImageSeeder::class);
+
+    $headwearPath = Category::where('slug', 'headwear')->value('image_path');
+    Storage::disk('public')->assertExists("{$headwearPath}-800.webp");
+});
+
 test('the category image seeder fills top-level tiles once and keeps existing images', function () {
     Storage::fake('public');
     $this->seed(CatalogSeeder::class);

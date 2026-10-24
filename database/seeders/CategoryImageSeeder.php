@@ -11,17 +11,21 @@ use Illuminate\Support\Str;
 class CategoryImageSeeder extends Seeder
 {
     /**
-     * Bundled photo for each top-level category tile, keyed by category slug.
+     * Bundled photo for each category, keyed by category slug: a tile photo for the top level, a product photo for subcategories.
      *
      * @var array<string, string>
      */
     private const PHOTOS = [
         'apparel' => 'category-apparel',
         'goods' => 'category-goods',
+        't-shirts' => 'wolf-badge-tee-black',
+        'hoodies' => 'essential-pullover-hoodie-black',
+        'sweatshirts' => 'crewneck-sweatshirt-grey',
+        'headwear' => 'knit-beanie-white',
     ];
 
     /**
-     * Give existing categories a tile image; safe to re-run, categories that already have one are left alone.
+     * Give existing categories an image; safe to re-run, categories that already have one are left alone.
      */
     public function run(StoreWebpImage $storeWebpImage): void
     {

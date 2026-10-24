@@ -12,6 +12,34 @@ use Illuminate\Http\UploadedFile;
 class CatalogSeeder extends Seeder
 {
     /**
+     * Product page copy, keyed by product slug.
+     *
+     * @var array<string, string>
+     */
+    private const DESCRIPTIONS = [
+        'wolf-badge-tee' => 'A heavyweight cotton tee with our wolf badge printed on the chest. Relaxed fit with a ribbed collar that keeps its shape.',
+        'heritage-logo-tee' => 'Soft combed-cotton tee with the Arusa heritage logo across the chest. A relaxed fit that holds up wash after wash.',
+        'puff-print-tee' => 'Our logo in raised puff print on a heavyweight cotton tee. The print has a soft, textured feel you can run your fingers over.',
+        'essential-pullover-hoodie' => 'A brushed-fleece pullover with a lined hood, kangaroo pocket and ribbed cuffs. Warm enough for Aizawl evenings.',
+        'street-hoodie' => 'A boxy hoodie with dropped shoulders in heavyweight fleece, cut for an easy, roomy fit.',
+        'relaxed-hoodie' => 'A soft fleece hoodie with a relaxed body and a slightly cropped length. Lined hood and front pocket.',
+        'crewneck-sweatshirt' => 'A classic crewneck in brushed-back fleece, with a ribbed collar, cuffs and hem.',
+        'mock-neck-long-sleeve-tee' => 'A fitted long-sleeve tee with a low mock neck, in a smooth cotton blend that layers easily under a jacket.',
+        'oversized-tee' => 'A roomy tee with dropped shoulders in heavyweight cotton. Take your usual size for the oversized look, or one down for a closer fit.',
+        'everyday-tee' => 'A lightweight cotton tee with a regular fit. The one you reach for every day.',
+        'ribbed-crop-top' => 'A stretchy rib-knit crop top with a close fit and a clean scoop neck.',
+        'polo-crop-top' => 'A cropped knit polo with a two-button placket and a soft collar.',
+        'knit-beanie' => 'A chunky rib-knit beanie with a fold-over cuff. One size that stretches to fit.',
+        'canvas-tote-bag' => 'A sturdy cotton canvas tote with long shoulder straps, roomy enough for a laptop or the day’s shopping.',
+        'insulated-bottle' => 'A double-walled steel bottle that keeps drinks cold or hot for hours. Leak-proof screw cap.',
+        'spiral-notebook' => 'A spiral-bound notebook with ruled pages and a stiff card cover that stands up to a backpack.',
+        'soy-candle' => 'A hand-poured soy wax candle with a cotton wick, in a glass jar you can reuse once it burns down.',
+        'brass-keyring' => 'A solid brass keyring stamped with the Arusa mark. It darkens to a warm patina with use.',
+        'ceramic-cup' => 'A stoneware cup with a matte glaze, sized for a coffee or a cup of tea.',
+        'enamel-mug' => 'A lightweight enamel mug with a rolled rim, as at home on a camping trip as on your desk.',
+    ];
+
+    /**
      * A small demo catalog, with stock photos from database/seeders/images, for checking the storefront locally.
      */
     public function run(): void
@@ -24,7 +52,7 @@ class CatalogSeeder extends Seeder
         $goods = Category::factory()->create(['name' => 'Goods', 'slug' => 'goods', 'sort_order' => 2]);
 
         foreach (['Wolf Badge Tee', 'Heritage Logo Tee', 'Puff Print Tee'] as $index => $name) {
-            $tee = Product::factory()->for($tees)->create(['name' => $name, 'slug' => str($name)->slug(), 'gender' => Gender::Unisex, 'base_price' => 99900]);
+            $tee = Product::factory()->for($tees)->create(['name' => $name, 'slug' => str($name)->slug(), 'description' => self::DESCRIPTIONS[(string) str($name)->slug()], 'gender' => Gender::Unisex, 'base_price' => 99900]);
 
             foreach (['Black', 'Cream'] as $colour) {
                 $this->attachImage($tee, $tee->slug.'-'.strtolower($colour), $colour);
@@ -60,7 +88,7 @@ class CatalogSeeder extends Seeder
             ['Ceramic Cup', $goods, null, 39900, [null], [null]],
         ]);
 
-        $mug = Product::factory()->for($goods)->create(['name' => 'Enamel Mug', 'slug' => 'enamel-mug', 'base_price' => 49900]);
+        $mug = Product::factory()->for($goods)->create(['name' => 'Enamel Mug', 'slug' => 'enamel-mug', 'description' => self::DESCRIPTIONS['enamel-mug'], 'base_price' => 49900]);
         $mug->variants()->create(['sku' => 'ENAMEL-MUG', 'stock' => 12]);
         $this->attachImage($mug, 'enamel-mug');
     }
@@ -75,7 +103,7 @@ class CatalogSeeder extends Seeder
         foreach ($products as $entry) {
             [$name, $category, $gender, $price, $colours, $sizes] = $entry + [5 => ['S', 'M', 'L', 'XL']];
 
-            $product = Product::factory()->for($category)->create(['name' => $name, 'slug' => str($name)->slug(), 'gender' => $gender, 'base_price' => $price]);
+            $product = Product::factory()->for($category)->create(['name' => $name, 'slug' => str($name)->slug(), 'description' => self::DESCRIPTIONS[(string) str($name)->slug()], 'gender' => $gender, 'base_price' => $price]);
 
             foreach ($colours as $colour) {
                 $this->attachImage($product, implode('-', array_filter([$product->slug, strtolower((string) $colour)])), $colour);
