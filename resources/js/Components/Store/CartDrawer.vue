@@ -30,7 +30,6 @@ const remove = (line) => {
 
 const variantLabel = (line) => [line.colour, line.size].filter(Boolean).join(' / ');
 
-const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700';
 const stepper = 'inline-flex h-11 w-11 items-center justify-center border border-brand-300 disabled:opacity-40';
 </script>
 
@@ -60,7 +59,7 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
             >
                 <div class="flex items-center justify-between border-b border-brand-200 px-4 py-3">
                     <h2 id="cart-drawer-title" class="text-xs font-medium uppercase tracking-[0.2em]">Your bag ({{ page.props.cart.count }})</h2>
-                    <button ref="closeButton" type="button" class="inline-flex h-11 w-11 items-center justify-center" :class="focusRing" aria-label="Close bag" @click="close">
+                    <button ref="closeButton" type="button" class="inline-flex h-11 w-11 items-center justify-center focus-ring" aria-label="Close bag" @click="close">
                         <IconClose class="h-6 w-6" />
                     </button>
                 </div>
@@ -77,11 +76,11 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
                             <p v-else class="mt-1 text-red-700">No longer available</p>
                             <div class="mt-2 flex items-center gap-3">
                                 <div v-if="line.available" class="flex items-center">
-                                    <button type="button" :class="[stepper, focusRing]" :aria-label="`One fewer ${line.name}`" @click="setQuantity(line, line.quantity - 1)">−</button>
+                                    <button type="button" :class="[stepper, 'focus-ring']" :aria-label="`One fewer ${line.name}`" @click="setQuantity(line, line.quantity - 1)">−</button>
                                     <span class="w-9 text-center tabular-nums" aria-live="polite">{{ line.quantity }}</span>
-                                    <button type="button" :class="[stepper, focusRing]" :aria-label="`One more ${line.name}`" :disabled="line.quantity >= line.max_quantity" @click="setQuantity(line, line.quantity + 1)">+</button>
+                                    <button type="button" :class="[stepper, 'focus-ring']" :aria-label="`One more ${line.name}`" :disabled="line.quantity >= line.max_quantity" @click="setQuantity(line, line.quantity + 1)">+</button>
                                 </div>
-                                <button type="button" class="min-h-11 text-sm underline underline-offset-4" :class="focusRing" @click="remove(line)">Remove</button>
+                                <button type="button" class="min-h-11 text-sm underline underline-offset-4 focus-ring" @click="remove(line)">Remove</button>
                             </div>
                         </div>
                     </li>
@@ -96,8 +95,8 @@ const stepper = 'inline-flex h-11 w-11 items-center justify-center border border
                     <p class="mt-1 text-xs text-brand-600">Shipping is worked out at checkout.</p>
                     <p v-if="page.props.cart.has_unavailable" class="mt-2 text-xs text-red-700" role="alert">Remove the unavailable items to check out.</p>
                     <div class="mt-4 grid gap-2">
-                        <Link v-if="!page.props.cart.has_unavailable" :href="route('checkout.create')" class="flex min-h-11 items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50" :class="focusRing" @click="close">Checkout</Link>
-                        <Link :href="route('cart.index')" class="flex min-h-11 items-center justify-center border border-ink text-xs font-medium uppercase tracking-[0.2em]" :class="focusRing" @click="close">View bag</Link>
+                        <Link v-if="!page.props.cart.has_unavailable" :href="route('checkout.create')" class="flex min-h-11 items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 focus-ring" @click="close">Checkout</Link>
+                        <Link :href="route('cart.index')" class="flex min-h-11 items-center justify-center border border-ink text-xs font-medium uppercase tracking-[0.2em] focus-ring" @click="close">View bag</Link>
                     </div>
                 </div>
             </aside>

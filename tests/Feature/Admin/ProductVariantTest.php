@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\User;
 
@@ -108,4 +109,34 @@ test('saving works when stock is unchanged since the page loaded', function () {
         ->assertSessionHasNoErrors();
 
     expect($variant->fresh()->stock)->toBe(10);
+});
+
+test('renaming a colour on every variant renames it on the images', function () {
+    $small = ProductVariant::factory()->for($this->product)->create(['size' => 'S', 'colour' => 'Navy', 'sku' => 'TEE-NAVY-S']);
+    $medium = ProductVariant::factory()->for($this->product)->create(['size' => 'M', 'colour' => 'Navy', 'sku' => 'TEE-NAVY-M']);
+    $image = ProductImage::factory()->for($this->product)->create(['colour' => 'Navy']);
+
+    $this->actingAs($this->admin)
+        ->put("/admin/products/{$this->product->id}/variants", ['variants' => [
+            variantRow(['id' => $small->id, 'size' => 'S', 'colour' => 'Blue', 'sku' => 'TEE-NAVY-S']),
+            variantRow(['id' => $medium->id, 'size' => 'M', 'colour' => 'Blue', 'sku' => 'TEE-NAVY-M']),
+        ]])
+        ->assertSessionHasNoErrors();
+
+    expect($image->fresh()->colour)->toBe('Blue');
+});
+
+test('images keep a colour that some variant still has', function () {
+    $small = ProductVariant::factory()->for($this->product)->create(['size' => 'S', 'colour' => 'Navy', 'sku' => 'TEE-NAVY-S']);
+    $medium = ProductVariant::factory()->for($this->product)->create(['size' => 'M', 'colour' => 'Navy', 'sku' => 'TEE-NAVY-M']);
+    $image = ProductImage::factory()->for($this->product)->create(['colour' => 'Navy']);
+
+    $this->actingAs($this->admin)
+        ->put("/admin/products/{$this->product->id}/variants", ['variants' => [
+            variantRow(['id' => $small->id, 'size' => 'S', 'colour' => 'Blue', 'sku' => 'TEE-NAVY-S']),
+            variantRow(['id' => $medium->id, 'size' => 'M', 'colour' => 'Navy', 'sku' => 'TEE-NAVY-M']),
+        ]])
+        ->assertSessionHasNoErrors();
+
+    expect($image->fresh()->colour)->toBe('Navy');
 });

@@ -14,8 +14,6 @@ const removeAddress = (address) => {
         onBefore: () => window.confirm('Remove this address?'),
     });
 };
-
-const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700';
 </script>
 
 <template>
@@ -26,8 +24,8 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
             <div class="flex flex-wrap items-baseline justify-between gap-4">
                 <h1 class="font-display text-3xl font-semibold sm:text-4xl">Your account</h1>
                 <div class="flex gap-6 text-sm">
-                    <Link :href="route('profile.edit')" class="underline underline-offset-4" :class="focusRing">Profile & password</Link>
-                    <Link :href="route('logout')" method="post" as="button" class="underline underline-offset-4" :class="focusRing">Log out</Link>
+                    <Link :href="route('profile.edit')" class="underline underline-offset-4 focus-ring">Profile & password</Link>
+                    <Link :href="route('logout')" method="post" as="button" class="underline underline-offset-4 focus-ring">Log out</Link>
                 </div>
             </div>
 
@@ -37,7 +35,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                 <h2 id="orders-title" class="text-xs font-medium uppercase tracking-[0.2em]">Orders</h2>
                 <ul v-if="orders.length" class="mt-4 divide-y divide-brand-200 border-y border-brand-200">
                     <li v-for="order in orders" :key="order.number">
-                        <a :href="order.url" class="flex min-h-14 items-center justify-between gap-4 py-3 text-sm hover:bg-brand-100" :class="focusRing">
+                        <a :href="order.url" class="flex min-h-14 items-center justify-between gap-4 py-3 text-sm hover:bg-brand-100 focus-ring">
                             <span>
                                 <span class="font-medium tabular-nums">{{ order.number }}</span>
                                 <span class="block text-brand-600">{{ order.placed_at }}</span>
@@ -61,7 +59,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                             {{ address.line1 }}<br />
                             {{ address.locality }}, {{ address.district }} {{ address.pincode }}
                         </address>
-                        <button type="button" class="mt-2 min-h-11 underline underline-offset-4" :class="focusRing" @click="removeAddress(address)">Remove</button>
+                        <button type="button" class="mt-2 min-h-11 underline underline-offset-4 focus-ring" @click="removeAddress(address)">Remove</button>
                     </li>
                 </ul>
                 <p v-else class="mt-4 text-sm text-brand-700">Addresses you check out with are saved here.</p>

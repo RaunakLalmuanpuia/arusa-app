@@ -49,7 +49,7 @@ test('a dispatched order cannot be cancelled', function () {
 test('the unpaid-order sweep leaves an order that was just paid', function () {
     $this->order->update(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Confirmed]);
 
-    app(CancelOrder::class)->handle($this->order, onlyIfAwaitingPayment: true);
+    app(CancelOrder::class)->handle($this->order, onlyIfPending: true);
 
     expect($this->order->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Confirmed)
         ->and($this->variant->fresh()->stock)->toBe(2);

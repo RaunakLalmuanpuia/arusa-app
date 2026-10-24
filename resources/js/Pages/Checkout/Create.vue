@@ -53,10 +53,6 @@ const buttonLabel = computed(() => {
 const submit = () => form.post(route('checkout.store'));
 
 const variantLabel = (line) => [line.colour, line.size].filter(Boolean).join(' / ');
-
-const field = 'mt-1 block min-h-11 w-full border-brand-300 bg-transparent focus:border-ink focus:ring-ink';
-const label = 'text-xs font-medium uppercase tracking-[0.2em]';
-const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700';
 </script>
 
 <template>
@@ -74,18 +70,18 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                 <fieldset class="space-y-4">
                     <legend class="font-display text-xl font-semibold">Contact</legend>
                     <div>
-                        <label for="name" :class="label">Full name</label>
-                        <input id="name" v-model="form.name" autocomplete="name" required :class="field" />
+                        <label class="store-label" for="name">Full name</label>
+                        <input class="store-field" id="name" v-model="form.name" autocomplete="name" required />
                         <InputError class="mt-1" :message="form.errors.name" />
                     </div>
                     <div>
-                        <label for="phone" :class="label">Mobile number</label>
-                        <input id="phone" v-model="form.phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="10 digits" required :class="field" />
+                        <label class="store-label" for="phone">Mobile number</label>
+                        <input class="store-field" id="phone" v-model="form.phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="10 digits" required />
                         <InputError class="mt-1" :message="form.errors.phone" />
                     </div>
                     <div>
-                        <label for="email" :class="label">Email (optional, for your receipt)</label>
-                        <input id="email" v-model="form.email" type="email" autocomplete="email" :class="field" />
+                        <label class="store-label" for="email">Email (optional, for your receipt)</label>
+                        <input class="store-field" id="email" v-model="form.email" type="email" autocomplete="email" />
                         <InputError class="mt-1" :message="form.errors.email" />
                     </div>
                 </fieldset>
@@ -93,26 +89,26 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                 <fieldset class="space-y-4">
                     <legend class="font-display text-xl font-semibold">Delivery address</legend>
                     <div>
-                        <label for="line1" :class="label">House, building, street</label>
-                        <input id="line1" v-model="form.line1" autocomplete="address-line1" required :class="field" />
+                        <label class="store-label" for="line1">House, building, street</label>
+                        <input class="store-field" id="line1" v-model="form.line1" autocomplete="address-line1" required />
                         <InputError class="mt-1" :message="form.errors.line1" />
                     </div>
                     <div>
-                        <label for="locality" :class="label">Locality / veng</label>
-                        <input id="locality" v-model="form.locality" autocomplete="address-level3" required :class="field" />
+                        <label class="store-label" for="locality">Locality / veng</label>
+                        <input class="store-field" id="locality" v-model="form.locality" autocomplete="address-level3" required />
                         <InputError class="mt-1" :message="form.errors.locality" />
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label for="district" :class="label">District</label>
-                            <select id="district" v-model="form.district" required :class="field">
+                            <label class="store-label" for="district">District</label>
+                            <select class="store-field" id="district" v-model="form.district" required>
                                 <option v-for="district in districts" :key="district" :value="district">{{ district }}</option>
                             </select>
                             <InputError class="mt-1" :message="form.errors.district" />
                         </div>
                         <div>
-                            <label for="pincode" :class="label">Pincode</label>
-                            <input id="pincode" v-model="form.pincode" inputmode="numeric" autocomplete="postal-code" maxlength="6" required :class="field" />
+                            <label class="store-label" for="pincode">Pincode</label>
+                            <input class="store-field" id="pincode" v-model="form.pincode" inputmode="numeric" autocomplete="postal-code" maxlength="6" required />
                             <InputError class="mt-1" :message="form.errors.pincode" />
                             <p v-if="liveQuote && !liveQuote.deliverable" class="mt-1 text-sm text-red-700" role="status">We don't deliver here yet.</p>
                             <p v-else-if="liveQuote?.deliverable" class="mt-1 text-sm text-brand-700" role="status">Delivering to {{ liveQuote.zone }}.</p>
@@ -138,8 +134,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
 
                 <button
                     type="submit"
-                    class="flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 disabled:opacity-40"
-                    :class="focusRing"
+                    class="flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 disabled:opacity-40 focus-ring"
                     :disabled="!canPlaceOrder"
                 >
                     {{ buttonLabel }}

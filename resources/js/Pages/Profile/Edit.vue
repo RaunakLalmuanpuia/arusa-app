@@ -1,9 +1,9 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import StoreLayout from '@/Layouts/StoreLayout.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({
     mustVerifyEmail: {
@@ -16,41 +16,18 @@ defineProps({
 </script>
 
 <template>
-    <Head title="Profile" />
+    <Head title="Profile & password" />
 
-    <AuthenticatedLayout>
-        <template #header>
-            <h2
-                class="text-xl font-semibold leading-tight text-gray-800"
-            >
-                Profile
-            </h2>
-        </template>
+    <StoreLayout>
+        <div class="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+            <Link :href="route('account')" class="store-link">← Your account</Link>
+            <h1 class="mt-4 font-display text-3xl font-semibold sm:text-4xl">Profile & password</h1>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <UpdateProfileInformationForm
-                        :must-verify-email="mustVerifyEmail"
-                        :status="status"
-                        class="max-w-xl"
-                    />
-                </div>
-
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <UpdatePasswordForm class="max-w-xl" />
-                </div>
-
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <DeleteUserForm class="max-w-xl" />
-                </div>
+            <div class="mt-10 max-w-xl divide-y divide-brand-200">
+                <UpdateProfileInformationForm :must-verify-email="mustVerifyEmail" :status="status" class="pb-10" />
+                <UpdatePasswordForm class="py-10" />
+                <DeleteUserForm class="pt-10" />
             </div>
         </div>
-    </AuthenticatedLayout>
+    </StoreLayout>
 </template>

@@ -1,7 +1,11 @@
 <x-mail::message>
 # Thank you, {{ $order->customer_name }}
 
-Your order **{{ $order->number }}** is confirmed. {{ $order->payment_method === \App\Enums\PaymentMethod::Cod ? 'You pay cash on delivery' : 'Your online payment is received' }}, and we'll call {{ $order->customer_phone }} before we deliver.
+@if ($order->payment_method === \App\Enums\PaymentMethod::Cod)
+We've received your order **{{ $order->number }}**. You pay cash on delivery. We'll call {{ $order->customer_phone }} within 24 hours to confirm it; unconfirmed orders are cancelled after a day.
+@else
+Your order **{{ $order->number }}** is confirmed. Your online payment is received, and we'll call {{ $order->customer_phone }} before we deliver.
+@endif
 
 <x-mail::table>
 | Item | Qty | Price |

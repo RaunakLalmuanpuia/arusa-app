@@ -15,16 +15,16 @@ class CancelOrder
      * Cancel the order and put its stock back. An unpaid online payment is marked Failed.
      * Refunding a paid order is a separate step (RefundPayment).
      *
-     * With $onlyIfAwaitingPayment the order is left alone unless it is still waiting for payment,
-     * so the unpaid-order sweep never cancels an order that was paid a moment ago.
+     * With $onlyIfPending the order is left alone unless it is still Pending (unpaid online, or COD not yet
+     * confirmed by phone), so the sweep never cancels an order that was paid or confirmed a moment ago.
      */
-    public function handle(Order $order, bool $onlyIfAwaitingPayment = false): Order
+    public function handle(Order $order, bool $onlyIfPending = false): Order
     {
-        return DB::transaction(function () use ($order, $onlyIfAwaitingPayment): Order {
+        return DB::transaction(function () use ($order, $onlyIfPending): Order {
             $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
 
             if ($order->fulfilment_status === FulfilmentStatus::Cancelled
-                || ($onlyIfAwaitingPayment && $order->payment_status !== PaymentStatus::AwaitingPayment)) {
+                || ($onlyIfPending && $order->fulfilment_status !== FulfilmentStatus::Pending)) {
                 return $order;
             }
 

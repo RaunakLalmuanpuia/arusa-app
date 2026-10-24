@@ -94,7 +94,7 @@ class PlaceOrder
                 'total' => $total,
                 'payment_method' => $paymentMethod,
                 'payment_status' => $paymentMethod === PaymentMethod::Cod ? PaymentStatus::Pending : PaymentStatus::AwaitingPayment,
-                'fulfilment_status' => $paymentMethod === PaymentMethod::Cod ? FulfilmentStatus::Confirmed : FulfilmentStatus::Pending,
+                'fulfilment_status' => FulfilmentStatus::Pending,
                 'placed_at' => now(),
             ]);
 

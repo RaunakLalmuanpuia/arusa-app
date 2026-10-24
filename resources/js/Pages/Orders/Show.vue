@@ -17,7 +17,6 @@ const page = usePage();
 const paymentMessage = ref(props.payment_error);
 const opening = ref(false);
 
-const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700';
 
 /** Razorpay Checkout is loaded only on this page, only when someone pays. */
 const loadCheckout = () =>
@@ -102,7 +101,7 @@ onMounted(() => {
             <div v-else-if="just_placed && pays_on_delivery" class="mb-8 border border-brand-300 bg-brand-100 px-4 py-4" role="status">
                 <p class="font-display text-2xl font-semibold">Thank you, {{ order.customer_name }}.</p>
                 <p class="mt-1 text-sm text-brand-700">
-                    Your order is confirmed. We'll call {{ order.customer_phone }} before delivery. Bookmark this page to check on your order.
+                    We'll call {{ order.customer_phone }} within 24 hours to confirm your order. Please keep your phone on, as unconfirmed orders are cancelled after a day. Bookmark this page to check on your order.
                 </p>
             </div>
 
@@ -112,8 +111,7 @@ onMounted(() => {
                 <p v-if="paymentMessage" class="mt-3 text-sm text-red-700" role="alert">{{ paymentMessage }}</p>
                 <button
                     type="button"
-                    class="mt-4 flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 disabled:opacity-40"
-                    :class="focusRing"
+                    class="mt-4 flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 disabled:opacity-40 focus-ring"
                     :disabled="opening"
                     @click="pay"
                 >

@@ -20,8 +20,6 @@ const infoLinks = [
     { label: 'Shipping & Returns', slug: 'shipping-returns' },
     { label: 'Contact', slug: 'contact' },
 ];
-
-const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-200';
 </script>
 
 <template>
@@ -37,8 +35,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
             <div class="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center px-2 sm:px-4 md:flex md:justify-between">
                 <button
                     type="button"
-                    class="inline-flex h-11 w-11 items-center justify-center rounded md:hidden"
-                    :class="focusRing"
+                    class="inline-flex h-11 w-11 items-center justify-center rounded md:hidden focus-ring-inverse"
                     :aria-label="isMenuOpen ? 'Close menu' : 'Open menu'"
                     :aria-expanded="isMenuOpen"
                     aria-controls="mobile-menu"
@@ -48,7 +45,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     <IconMenu v-else class="h-6 w-6" />
                 </button>
 
-                <Link :href="route('home')" class="flex items-center gap-3 rounded" :class="focusRing">
+                <Link :href="route('home')" class="flex items-center gap-3 rounded focus-ring-inverse">
                     <ApplicationLogo on-dark class="h-11 w-auto" />
                     <span class="hidden font-display text-xl font-semibold uppercase tracking-[0.2em] sm:inline">
                         {{ page.props.store.store_name }}
@@ -60,8 +57,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         v-for="category in page.props.categories"
                         :key="category.slug"
                         :href="route('categories.show', category.slug)"
-                        class="rounded py-2 text-xs font-medium uppercase tracking-[0.2em] text-brand-200 transition-colors duration-200 hover:text-brand-50"
-                        :class="focusRing"
+                        class="rounded py-2 text-xs font-medium uppercase tracking-[0.2em] text-brand-200 transition-colors duration-200 hover:text-brand-50 focus-ring-inverse"
                     >
                         {{ category.name }}
                     </Link>
@@ -71,23 +67,20 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     <Link
                         v-if="page.props.auth.user?.is_admin"
                         :href="route('admin.dashboard')"
-                        class="hidden rounded px-2 py-2 text-xs font-medium uppercase tracking-[0.2em] text-brand-200 underline-offset-4 hover:underline md:inline"
-                        :class="focusRing"
+                        class="hidden rounded px-2 py-2 text-xs font-medium uppercase tracking-[0.2em] text-brand-200 underline-offset-4 hover:underline md:inline focus-ring-inverse"
                     >
                         Admin
                     </Link>
                     <Link
                         :href="route('search')"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
-                        :class="focusRing"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200 focus-ring-inverse"
                         aria-label="Search"
                     >
                         <IconSearch class="h-6 w-6" />
                     </Link>
                     <button
                         type="button"
-                        class="relative inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
-                        :class="focusRing"
+                        class="relative inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200 focus-ring-inverse"
                         :aria-label="`Bag, ${page.props.cart.count} ${page.props.cart.count === 1 ? 'item' : 'items'}`"
                         @click="isCartOpen = true"
                     >
@@ -102,8 +95,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     </button>
                     <Link
                         :href="page.props.auth.user ? route('account') : route('login')"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200"
-                        :class="focusRing"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded transition-colors duration-200 hover:text-brand-200 focus-ring-inverse"
                         :aria-label="page.props.auth.user ? 'My account' : 'Log in'"
                     >
                         <IconUser class="h-6 w-6" />
@@ -127,8 +119,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         v-for="category in page.props.categories"
                         :key="category.slug"
                         :href="route('categories.show', category.slug)"
-                        class="flex min-h-11 items-center border-b border-brand-800 text-sm font-medium uppercase tracking-[0.2em]"
-                        :class="focusRing"
+                        class="flex min-h-11 items-center border-b border-brand-800 text-sm font-medium uppercase tracking-[0.2em] focus-ring-inverse"
                         @click="isMenuOpen = false"
                     >
                         {{ category.name }}
@@ -138,8 +129,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         v-for="link in infoLinks"
                         :key="link.slug"
                         :href="route('pages.show', link.slug)"
-                        class="flex min-h-11 items-center border-b border-brand-800 text-sm font-medium uppercase tracking-[0.2em]"
-                        :class="focusRing"
+                        class="flex min-h-11 items-center border-b border-brand-800 text-sm font-medium uppercase tracking-[0.2em] focus-ring-inverse"
                         @click="isMenuOpen = false"
                     >
                         {{ link.label }}
@@ -147,8 +137,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     <Link
                         v-if="page.props.auth.user?.is_admin"
                         :href="route('admin.dashboard')"
-                        class="flex min-h-11 items-center text-sm font-medium uppercase tracking-[0.2em] text-brand-200"
-                        :class="focusRing"
+                        class="flex min-h-11 items-center text-sm font-medium uppercase tracking-[0.2em] text-brand-200 focus-ring-inverse"
                     >
                         Admin
                     </Link>
@@ -169,12 +158,12 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     <p class="mt-1 text-xs uppercase tracking-[0.2em] text-brand-300">Aizawl, Mizoram</p>
                     <div class="mt-6 space-y-1">
                         <p v-if="page.props.store.contact_phone">
-                            <a :href="`tel:+91${page.props.store.contact_phone}`" class="rounded hover:text-brand-50" :class="focusRing">
+                            <a :href="`tel:+91${page.props.store.contact_phone}`" class="rounded hover:text-brand-50 focus-ring-inverse">
                                 +91 {{ page.props.store.contact_phone }}
                             </a>
                         </p>
                         <p v-if="page.props.store.contact_email">
-                            <a :href="`mailto:${page.props.store.contact_email}`" class="rounded hover:text-brand-50" :class="focusRing">
+                            <a :href="`mailto:${page.props.store.contact_email}`" class="rounded hover:text-brand-50 focus-ring-inverse">
                                 {{ page.props.store.contact_email }}
                             </a>
                         </p>
@@ -184,8 +173,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         :href="`https://wa.me/91${page.props.store.whatsapp_number}`"
                         target="_blank"
                         rel="noopener"
-                        class="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-600 px-5 text-xs font-medium uppercase tracking-[0.2em] text-brand-50 transition-colors duration-200 hover:bg-brand-800"
-                        :class="focusRing"
+                        class="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-600 px-5 text-xs font-medium uppercase tracking-[0.2em] text-brand-50 transition-colors duration-200 hover:bg-brand-800 focus-ring-inverse"
                     >
                         <IconChat class="h-5 w-5" />
                         Chat on WhatsApp
@@ -196,8 +184,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         v-for="link in infoLinks"
                         :key="link.slug"
                         :href="route('pages.show', link.slug)"
-                        class="flex min-h-11 items-center rounded text-xs uppercase tracking-[0.2em] hover:text-brand-50"
-                        :class="focusRing"
+                        class="flex min-h-11 items-center rounded text-xs uppercase tracking-[0.2em] hover:text-brand-50 focus-ring-inverse"
                     >
                         {{ link.label }}
                     </Link>

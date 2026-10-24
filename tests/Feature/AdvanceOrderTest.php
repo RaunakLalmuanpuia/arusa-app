@@ -13,10 +13,10 @@ beforeEach(function () {
     Mail::fake();
 });
 
-test('a COD order moves one step at a time and is paid on delivery', function () {
-    $order = Order::factory()->create();
+test('a COD order moves one step at a time from phone confirmation and is paid on delivery', function () {
+    $order = Order::factory()->create(['fulfilment_status' => FulfilmentStatus::Pending]);
 
-    foreach ([FulfilmentStatus::Packed, FulfilmentStatus::Dispatched] as $status) {
+    foreach ([FulfilmentStatus::Confirmed, FulfilmentStatus::Packed, FulfilmentStatus::Dispatched] as $status) {
         app(AdvanceOrder::class)->handle($order, $status);
         expect($order->fresh()->payment_status)->toBe(PaymentStatus::Pending);
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\FulfilmentStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
@@ -29,10 +30,15 @@ class DashboardController extends Controller
                 ]),
             ],
             'needs_action' => [
-                ['label' => 'To pack', 'status' => FulfilmentStatus::Confirmed->value, 'count' => Order::where('fulfilment_status', FulfilmentStatus::Confirmed)->count()],
-                ['label' => 'To dispatch', 'status' => FulfilmentStatus::Packed->value, 'count' => Order::where('fulfilment_status', FulfilmentStatus::Packed)->count()],
-                ['label' => 'To deliver', 'status' => FulfilmentStatus::Dispatched->value, 'count' => Order::where('fulfilment_status', FulfilmentStatus::Dispatched)->count()],
-                ['label' => 'Refund owed', 'status' => 'refund_owed', 'count' => Order::refundOwed()->count()],
+                [
+                    'label' => 'To confirm by phone',
+                    'filters' => ['status' => FulfilmentStatus::Pending->value, 'payment_method' => PaymentMethod::Cod->value],
+                    'count' => Order::where('fulfilment_status', FulfilmentStatus::Pending)->where('payment_method', PaymentMethod::Cod)->count(),
+                ],
+                ['label' => 'To pack', 'filters' => ['status' => FulfilmentStatus::Confirmed->value], 'count' => Order::where('fulfilment_status', FulfilmentStatus::Confirmed)->count()],
+                ['label' => 'To dispatch', 'filters' => ['status' => FulfilmentStatus::Packed->value], 'count' => Order::where('fulfilment_status', FulfilmentStatus::Packed)->count()],
+                ['label' => 'To deliver', 'filters' => ['status' => FulfilmentStatus::Dispatched->value], 'count' => Order::where('fulfilment_status', FulfilmentStatus::Dispatched)->count()],
+                ['label' => 'Refund owed', 'filters' => ['status' => 'refund_owed'], 'count' => Order::refundOwed()->count()],
             ],
             'low_stock' => ProductVariant::with('product:id,name')
                 ->where('is_active', true)

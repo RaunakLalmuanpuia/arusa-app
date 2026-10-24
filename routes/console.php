@@ -1,9 +1,11 @@
 <?php
 
 use App\Actions\CancelOrder;
-use App\Enums\PaymentStatus;
+use App\Enums\FulfilmentStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -28,21 +30,23 @@ Artisan::command('admin:grant {email}', function (string $email): int {
 })->purpose('Grant admin access to an existing user');
 
 Artisan::command('orders:cancel-abandoned', function (CancelOrder $cancelOrder): int {
-    $orders = Order::where('payment_status', PaymentStatus::AwaitingPayment)
-        ->where('placed_at', '<', now()->subMinutes(30))
+    $orders = Order::where('fulfilment_status', FulfilmentStatus::Pending)
+        ->where(fn (Builder $query) => $query
+            ->where(fn (Builder $query) => $query->where('payment_method', PaymentMethod::Razorpay)->where('placed_at', '<', now()->subMinutes(30)))
+            ->orWhere(fn (Builder $query) => $query->where('payment_method', PaymentMethod::Cod)->where('placed_at', '<', now()->subDay())))
         ->get();
 
     foreach ($orders as $order) {
         try {
-            $cancelOrder->handle($order, onlyIfAwaitingPayment: true);
+            $cancelOrder->handle($order, onlyIfPending: true);
         } catch (Throwable $exception) {
             report($exception);
         }
     }
 
-    $this->info("Checked {$orders->count()} unpaid orders.");
+    $this->info("Checked {$orders->count()} pending orders.");
 
     return 0;
-})->purpose('Cancel online orders left unpaid for 30 minutes and put their stock back');
+})->purpose('Cancel online orders unpaid after 30 minutes and COD orders unconfirmed after 24 hours, and put their stock back');
 
 Schedule::command('orders:cancel-abandoned')->everyFiveMinutes()->withoutOverlapping();

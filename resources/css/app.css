@@ -9,3 +9,12 @@
 .content-prose a { @apply underline underline-offset-4 hover:text-brand-600; }
 .content-prose table { @apply mb-4 w-full text-left text-sm; }
 .content-prose th, .content-prose td { @apply border-b border-brand-200 py-2 pr-4; }
+
+@layer components {
+    .focus-ring { @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700; }
+    .focus-ring-inverse { @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-200; }
+    .store-label { @apply text-xs font-medium uppercase tracking-[0.2em]; }
+    .store-field { @apply mt-1 block min-h-11 w-full border-brand-300 bg-transparent focus:border-ink focus:ring-ink; }
+    .store-button { @apply inline-flex min-h-12 items-center justify-center bg-ink px-8 text-xs font-medium uppercase tracking-[0.2em] text-brand-50 transition-opacity duration-150 disabled:opacity-40 motion-reduce:transition-none focus-ring; }
+    .store-link { @apply text-sm underline underline-offset-4 focus-ring; }
+}

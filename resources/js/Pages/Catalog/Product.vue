@@ -60,8 +60,6 @@ const addToCart = () => {
         onSuccess: () => { isCartOpen.value = true; },
     });
 };
-
-const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700';
 </script>
 
 <template>
@@ -98,7 +96,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                         :key="image.src"
                         type="button"
                         class="h-16 w-16 shrink-0 overflow-hidden border transition-colors duration-150 motion-reduce:transition-none"
-                        :class="[index === activeImage ? 'border-ink' : 'border-transparent hover:border-brand-400', focusRing]"
+                        :class="[index === activeImage ? 'border-ink' : 'border-transparent hover:border-brand-400', 'focus-ring']"
                         :aria-label="`Show image ${index + 1}`"
                         :aria-current="index === activeImage"
                         @click="activeImage = index"
@@ -111,8 +109,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
             <div>
                 <Link
                     :href="route('categories.show', product.category.slug)"
-                    class="text-xs uppercase tracking-[0.3em] text-brand-600 hover:underline"
-                    :class="focusRing"
+                    class="text-xs uppercase tracking-[0.3em] text-brand-600 hover:underline focus-ring"
                 >
                     {{ product.category.name }}
                 </Link>
@@ -127,7 +124,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                             :key="colour"
                             type="button"
                             class="min-h-11 border px-4 text-sm transition-colors duration-150 motion-reduce:transition-none"
-                            :class="[colour === selectedColour ? 'border-ink bg-ink text-brand-50' : 'border-brand-300 hover:border-ink', focusRing]"
+                            :class="[colour === selectedColour ? 'border-ink bg-ink text-brand-50' : 'border-brand-300 hover:border-ink', 'focus-ring']"
                             :aria-pressed="colour === selectedColour"
                             @click="selectColour(colour)"
                         >
@@ -147,7 +144,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                             :class="[
                                 size === selectedSize ? 'border-ink bg-ink text-brand-50' : 'border-brand-300 hover:border-ink',
                                 isSizeAvailable(size) ? '' : 'text-brand-500 line-through',
-                                focusRing,
+                                'focus-ring',
                             ]"
                             :aria-pressed="size === selectedSize"
                             :aria-disabled="!isSizeAvailable(size)"
@@ -158,8 +155,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                     </div>
                     <Link
                         :href="route('pages.show', 'size-guide')"
-                        class="mt-3 inline-block text-sm underline underline-offset-4"
-                        :class="focusRing"
+                        class="mt-3 inline-block text-sm underline underline-offset-4 focus-ring"
                     >
                         Size guide
                     </Link>
@@ -173,8 +169,7 @@ const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:o
                 <p v-if="$page.props.errors.variant_id" class="mt-2 text-sm text-red-700" role="alert">{{ $page.props.errors.variant_id }}</p>
                 <button
                     type="button"
-                    class="mt-4 flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 transition-opacity duration-150 disabled:opacity-40 motion-reduce:transition-none sm:w-auto sm:px-12"
-                    :class="focusRing"
+                    class="mt-4 flex min-h-12 w-full items-center justify-center bg-ink text-xs font-medium uppercase tracking-[0.2em] text-brand-50 transition-opacity duration-150 disabled:opacity-40 motion-reduce:transition-none sm:w-auto sm:px-12 focus-ring"
                     :disabled="!selectedVariant?.in_stock || isAdding"
                     @click="addToCart"
                 >

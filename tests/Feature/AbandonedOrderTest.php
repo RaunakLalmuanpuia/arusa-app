@@ -49,6 +49,21 @@ test('recent, paid and cash on delivery orders are left alone', function () {
         ->and($this->variant->fresh()->stock)->toBe(0);
 });
 
+test('cash on delivery orders nobody confirmed within 24 hours are cancelled and their stock comes back', function () {
+    $unconfirmed = Order::factory()->create(['fulfilment_status' => FulfilmentStatus::Pending, 'placed_at' => now()->subHours(25)]);
+    OrderItem::factory()->for($unconfirmed)->create(['product_variant_id' => $this->variant->id, 'quantity' => 2]);
+    $recent = Order::factory()->create(['fulfilment_status' => FulfilmentStatus::Pending, 'placed_at' => now()->subHours(23)]);
+    $confirmed = Order::factory()->create(['placed_at' => now()->subDays(2)]);
+
+    $this->artisan('orders:cancel-abandoned')->assertSuccessful();
+
+    expect($unconfirmed->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Cancelled)
+        ->and($unconfirmed->fresh()->payment_status)->toBe(PaymentStatus::Pending)
+        ->and($this->variant->fresh()->stock)->toBe(2)
+        ->and($recent->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Pending)
+        ->and($confirmed->fresh()->fulfilment_status)->toBe(FulfilmentStatus::Confirmed);
+});
+
 test('one order that fails to cancel does not stop the rest of the sweep', function () {
     Exceptions::fake();
     abandonedSweepOrder(31);

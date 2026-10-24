@@ -69,6 +69,11 @@ const refund = (payment) => {
                 {{ $page.props.errors[key] }}
             </p>
 
+            <p v-if="next_status?.value === 'confirmed'" class="rounded bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+                Call <a :href="`tel:+91${order.customer_phone}`" class="font-medium underline">{{ order.customer_phone }}</a> to confirm this cash-on-delivery order before packing it.
+                It is cancelled automatically 24 hours after it was placed if nobody confirms it.
+            </p>
+
             <section v-if="next_status || can_cancel" class="flex flex-wrap items-end gap-3 rounded bg-white p-4 shadow-sm">
                 <label v-if="next_status?.value === 'dispatched'" class="block text-sm text-gray-700">
                     Tracking note (optional)
@@ -87,7 +92,7 @@ const refund = (payment) => {
                     class="rounded bg-gray-800 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
                     @click="advance"
                 >
-                    Mark {{ next_status.label }}
+                    {{ next_status.value === 'confirmed' ? 'Confirmed by phone' : `Mark ${next_status.label}` }}
                 </button>
                 <button v-if="can_cancel" type="button" :disabled="isBusy" class="rounded px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50" @click="cancel">
                     Cancel order

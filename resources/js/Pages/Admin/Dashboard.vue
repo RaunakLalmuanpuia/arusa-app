@@ -20,15 +20,15 @@ defineProps({
         </template>
 
         <div class="space-y-6">
-            <section class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <section class="grid grid-cols-2 gap-4 lg:grid-cols-5">
                 <Link
                     v-for="item in needs_action"
-                    :key="item.status"
-                    :href="route('admin.orders.index', { status: item.status })"
+                    :key="item.label"
+                    :href="route('admin.orders.index', item.filters)"
                     class="rounded bg-white p-4 shadow-sm hover:bg-gray-50"
                 >
                     <span class="block text-sm text-gray-500">{{ item.label }}</span>
-                    <span class="text-2xl font-semibold" :class="item.status === 'refund_owed' && item.count ? 'text-red-700' : 'text-gray-900'">{{ item.count }}</span>
+                    <span class="text-2xl font-semibold" :class="item.filters.status === 'refund_owed' && item.count ? 'text-red-700' : 'text-gray-900'">{{ item.count }}</span>
                 </Link>
             </section>
 

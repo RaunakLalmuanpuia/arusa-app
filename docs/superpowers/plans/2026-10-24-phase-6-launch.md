@@ -58,7 +58,7 @@ Small. Write these up with writing-plans when starting.
    - `security-review` on the whole app;
    - an `impeccable` audit of the storefront;
    - a design-motion-principles audit;
-   - the storefront JS budget: the app chunk was ~295 KB raw against the 200 KB target. Fix it or accept it.
+   - ~~the storefront JS budget~~: **accepted** by the owner on 2026-10-24. The app chunk is ~300 KB raw / ~102 KB gzip, almost all Vue, Inertia and axios. Look again only if a large library is added.
 6. **Open follow-ups to triage before going live:**
    - ~~Webhook 302 on a failed automatic refund~~: fixed after Phase 5. It now answers 503, so Razorpay redelivers.
    - Fixed on 2026-10-24: refund webhooks are now handled, and most deferred Minor findings are cleared. See the "follow-ups" commit for what was left and why.
@@ -173,6 +173,6 @@ Small. Write these up with writing-plans when starting.
 3. **Server config files in the repo** (`deploy/` folder, a new base folder), or only in this doc?
 4. **A CDN or proxy (e.g. Cloudflare) in front?** If yes, configure trusted proxies.
 5. **Error alerts:** the spec has none. Is reading the logs enough, or should we add a free option, e.g. a daily email of errors?
-6. **The JS budget** (~295 KB against 200 KB): fix it before launch or accept it?
+6. ~~**The JS budget**~~: accepted (~300 KB raw / ~102 KB gzip), owner decision 2026-10-24.
 7. **Which of the deferred follow-ups** must be fixed before going live?
 8. **Extra policy pages** for Razorpay KYC: who writes them?

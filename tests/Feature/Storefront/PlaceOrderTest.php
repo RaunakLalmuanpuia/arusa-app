@@ -44,7 +44,7 @@ test('a guest places a cash on delivery order', function () {
     expect($order->only('subtotal', 'shipping', 'total', 'customer_phone', 'ship_pincode', 'user_id'))
         ->toBe(['subtotal' => 199800, 'shipping' => 0, 'total' => 199800, 'customer_phone' => '9876543210', 'ship_pincode' => '796001', 'user_id' => null])
         ->and($order->payment_status)->toBe(PaymentStatus::Pending)
-        ->and($order->fulfilment_status)->toBe(FulfilmentStatus::Confirmed)
+        ->and($order->fulfilment_status)->toBe(FulfilmentStatus::Pending)
         ->and($order->items()->sole()->only('product_name', 'size', 'colour', 'unit_price', 'quantity'))
         ->toBe(['product_name' => 'Wolf Tee', 'size' => 'M', 'colour' => 'Black', 'unit_price' => 99900, 'quantity' => 2])
         ->and($this->tee->fresh()->stock)->toBe(3);

@@ -27,15 +27,18 @@ test('the dashboard counts orders that need action', function () {
     Order::factory()->count(2)->create();
     Order::factory()->create(['fulfilment_status' => FulfilmentStatus::Packed]);
     Order::factory()->create(['fulfilment_status' => FulfilmentStatus::Delivered]);
+    Order::factory()->create(['fulfilment_status' => FulfilmentStatus::Pending]);
+    Order::factory()->razorpay()->create();
     $owed = Order::factory()->razorpay()->create(['payment_status' => PaymentStatus::Paid, 'fulfilment_status' => FulfilmentStatus::Cancelled]);
     Payment::factory()->paid()->for($owed)->create();
 
     $this->actingAs($this->admin)->get('/admin')
         ->assertInertia(fn ($page) => $page->where('needs_action', [
-            ['label' => 'To pack', 'status' => 'confirmed', 'count' => 2],
-            ['label' => 'To dispatch', 'status' => 'packed', 'count' => 1],
-            ['label' => 'To deliver', 'status' => 'dispatched', 'count' => 0],
-            ['label' => 'Refund owed', 'status' => 'refund_owed', 'count' => 1],
+            ['label' => 'To confirm by phone', 'filters' => ['status' => 'pending', 'payment_method' => 'cod'], 'count' => 1],
+            ['label' => 'To pack', 'filters' => ['status' => 'confirmed'], 'count' => 2],
+            ['label' => 'To dispatch', 'filters' => ['status' => 'packed'], 'count' => 1],
+            ['label' => 'To deliver', 'filters' => ['status' => 'dispatched'], 'count' => 0],
+            ['label' => 'Refund owed', 'filters' => ['status' => 'refund_owed'], 'count' => 1],
         ]));
 });
 
