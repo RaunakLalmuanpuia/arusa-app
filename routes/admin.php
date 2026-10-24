@@ -16,6 +16,11 @@ Route::middleware(['auth', 'can:access-admin'])
     ->group(function () {
         Route::inertia('/', 'Admin/Dashboard')->name('dashboard');
         Route::resource('orders', OrderController::class)->only(['index', 'show']);
+        Route::put('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
+        Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+        Route::post('orders/{order}/payments/{payment}/refund', [OrderController::class, 'refund'])
+            ->scopeBindings()
+            ->name('orders.payments.refund');
         Route::resource('pages', PageController::class)->except('show');
         Route::resource('categories', CategoryController::class)->except('show');
         Route::resource('products', ProductController::class)->except('show');

@@ -141,4 +141,25 @@ class Order extends Model
     {
         return URL::signedRoute('orders.show', $this);
     }
+
+    /**
+     * The captured payment the order was paid with: the oldest paid or refunded one. A later capture is a duplicate.
+     */
+    public function mainPayment(): ?Payment
+    {
+        return $this->payments()
+            ->whereIn('status', [PaymentStatus::Paid, PaymentStatus::Refunded])
+            ->whereNotNull('gateway_payment_id')
+            ->first();
+    }
+
+    /**
+     * An admin may refund a still-paid payment of a cancelled order, or a duplicate capture.
+     * Never the payment of an order that is still being fulfilled.
+     */
+    public function isRefundable(Payment $payment): bool
+    {
+        return $payment->status === PaymentStatus::Paid
+            && ($this->fulfilment_status === FulfilmentStatus::Cancelled || ! $payment->is($this->mainPayment()));
+    }
 }
