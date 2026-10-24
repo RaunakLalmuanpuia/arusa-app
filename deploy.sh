@@ -22,6 +22,8 @@ npm ci --silent --no-audit --no-fund
 npm run build --silent >/dev/null
 
 # Artisan runs as www-data so the caches and logs it writes stay writable by PHP-FPM and the worker.
+# Editing .env with sed -i resets its group, and PHP then silently falls back to defaults (SQLite).
+sudo chgrp www-data .env
 sudo chgrp -R www-data storage bootstrap/cache && sudo chmod -R ug+rwX storage bootstrap/cache
 sudo -u www-data php artisan migrate --force
 sudo -u www-data php artisan optimize
