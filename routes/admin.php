@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PageImageController;
+use App\Http\Controllers\Admin\PagePreviewController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\ProductVariantController;
@@ -24,6 +25,7 @@ Route::middleware(['auth', 'can:access-admin'])
             ->scopeBindings()
             ->name('orders.payments.refund');
         Route::get('orders/{order}/slip', [OrderController::class, 'slip'])->name('orders.slip');
+        Route::post('pages/preview', PagePreviewController::class)->name('pages.preview');
         Route::resource('pages', PageController::class)->except('show');
         Route::post('page-images', [PageImageController::class, 'store'])->name('page-images.store');
         Route::resource('categories', CategoryController::class)->except('show');
