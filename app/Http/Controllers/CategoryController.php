@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Gender;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,6 +20,7 @@ class CategoryController extends Controller
         abort_unless($category->is_active && ($category->parent?->is_active ?? true), 404);
 
         $filters = $request->validate([
+            'gender' => ['nullable', Rule::enum(Gender::class)],
             'size' => ['nullable', 'string', 'max:30'],
             'colour' => ['nullable', 'string', 'max:30'],
             'min' => ['nullable', 'integer', 'min:0'],
@@ -26,11 +29,12 @@ class CategoryController extends Controller
 
         $subcategories = $category->children()->active()->orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']);
         $categoryIds = $subcategories->pluck('id')->push($category->id);
-        $isFiltered = collect($filters)->filter(fn ($value) => $value !== null)->isNotEmpty();
+        $isFiltered = collect($filters)->except('gender')->filter(fn ($value) => $value !== null)->isNotEmpty();
 
         // shortcut: no pagination (catalog < ~100 products); add ->paginate() when a category passes ~50.
         $products = Product::visible()
             ->whereIn('category_id', $categoryIds)
+            ->when($filters['gender'] ?? null, fn (Builder $query, string $gender) => $query->whereIn('gender', Gender::from($gender)->matching()))
             ->when($isFiltered, fn (Builder $query) => $query->whereHas('variants', fn (Builder $variant) => $variant
                 ->where('is_active', true)
                 ->where('stock', '>', 0)
@@ -48,6 +52,7 @@ class CategoryController extends Controller
             'products' => $products->map(fn (Product $product): array => $product->cardData()),
             'sizes' => $this->variantValues($categoryIds, 'size'),
             'colours' => $this->variantValues($categoryIds, 'colour'),
+            'genders' => Product::visible()->whereIn('category_id', $categoryIds)->whereNotNull('gender')->exists() ? Gender::options() : [],
             'filters' => $filters,
         ]);
     }

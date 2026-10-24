@@ -6,12 +6,14 @@ import { toPaise } from '@/money';
 
 const props = defineProps({
     categories: { type: Array, required: true },
+    genders: { type: Array, required: true },
 });
 
 const form = useForm({
     name: '',
     slug: '',
     category_id: props.categories[0]?.id ?? null,
+    gender: null,
     description: '',
     base_price: '',
     is_active: true,
@@ -31,6 +33,6 @@ const submit = () => {
         </template>
 
         <p v-if="categories.length === 0" class="text-sm text-gray-600">Create a category first.</p>
-        <ProductForm v-else :form="form" :categories="categories" @submit="submit" />
+        <ProductForm v-else :form="form" :categories="categories" :genders="genders" @submit="submit" />
     </AdminLayout>
 </template>

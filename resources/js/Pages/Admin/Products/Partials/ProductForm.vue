@@ -8,6 +8,7 @@ import TextInput from '@/Components/TextInput.vue';
 defineProps({
     form: { type: Object, required: true },
     categories: { type: Array, required: true },
+    genders: { type: Array, required: true },
 });
 
 defineEmits(['submit']);
@@ -36,6 +37,18 @@ defineEmits(['submit']);
                 <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.label }}</option>
             </select>
             <InputError class="mt-2" :message="form.errors.category_id" />
+        </div>
+        <div>
+            <InputLabel for="gender" value="Gender" />
+            <select
+                id="gender"
+                v-model="form.gender"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-60"
+            >
+                <option :value="null">None (not clothing)</option>
+                <option v-for="gender in genders" :key="gender.value" :value="gender.value">{{ gender.label }}</option>
+            </select>
+            <InputError class="mt-2" :message="form.errors.gender" />
         </div>
         <div>
             <InputLabel for="base_price" value="Price (₹)" />

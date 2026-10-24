@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Gender;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -69,4 +70,25 @@ test('active top-level categories are shared for the navigation', function () {
     $this->get('/')->assertInertia(fn ($page) => $page
         ->has('categories', 1)
         ->where('categories.0.slug', 'apparel'));
+});
+
+test('the gender filter includes unisex products and ignores stock', function () {
+    $mens = productWith($this->apparel, ['stock' => 0]);
+    $mens->update(['gender' => Gender::Men]);
+    $unisex = productWith($this->apparel, []);
+    $unisex->update(['gender' => Gender::Unisex]);
+    productWith($this->apparel, [])->update(['gender' => Gender::Women]);
+    productWith($this->apparel, []);
+
+    $this->get('/categories/apparel?gender=men')
+        ->assertInertia(fn ($page) => $page
+            ->has('products', 2)
+            ->has('genders', 3)
+            ->where('products', fn ($products) => collect($products)->pluck('slug')->sort()->values()->all() === collect([$mens->slug, $unisex->slug])->sort()->values()->all()));
+});
+
+test('the gender filter is hidden when no product has a gender', function () {
+    productWith($this->apparel, []);
+
+    $this->get('/categories/apparel')->assertInertia(fn ($page) => $page->where('genders', []));
 });

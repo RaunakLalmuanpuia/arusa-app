@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Gender;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['category_id', 'name', 'slug', 'description', 'base_price', 'is_active'])]
+#[Fillable(['category_id', 'gender', 'name', 'slug', 'description', 'base_price', 'is_active'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -24,6 +25,7 @@ class Product extends Model
     {
         return [
             'base_price' => 'integer',
+            'gender' => Gender::class,
             'is_active' => 'boolean',
         ];
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Gender;
 use App\Models\Product;
 use App\Models\ProductVariant;
 
@@ -34,4 +35,16 @@ test('an empty query shows no results', function () {
     searchable(['name' => 'Wolf Hoodie']);
 
     $this->get('/search')->assertOk()->assertInertia(fn ($page) => $page->where('query', '')->has('products', 0));
+});
+
+test('search narrows by gender, keeping unisex products', function () {
+    searchable(['name' => 'Mens Hoodie', 'gender' => Gender::Men]);
+    $womens = searchable(['name' => 'Womens Hoodie', 'gender' => Gender::Women]);
+    $unisex = searchable(['name' => 'Unisex Hoodie', 'gender' => Gender::Unisex]);
+
+    $this->get('/search?q=hoodie&gender=women')
+        ->assertInertia(fn ($page) => $page
+            ->where('gender', 'women')
+            ->has('products', 2)
+            ->where('products', fn ($products) => collect($products)->pluck('slug')->sort()->values()->all() === collect([$womens->slug, $unisex->slug])->sort()->values()->all()));
 });

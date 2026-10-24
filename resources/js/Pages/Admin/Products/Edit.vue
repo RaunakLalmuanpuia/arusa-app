@@ -10,6 +10,7 @@ const props = defineProps({
     product: { type: Object, required: true },
     variants: { type: Array, required: true },
     categories: { type: Array, required: true },
+    genders: { type: Array, required: true },
     images: { type: Array, required: true },
     colours: { type: Array, required: true },
 });
@@ -34,7 +35,7 @@ const submit = () => {
         </template>
 
         <div class="space-y-8">
-            <ProductForm :form="form" :categories="categories" @submit="submit" />
+            <ProductForm :form="form" :categories="categories" :genders="genders" @submit="submit" />
             <VariantGrid :product="product" :variants="variants" />
             <ImageUploader
                 :images="images"

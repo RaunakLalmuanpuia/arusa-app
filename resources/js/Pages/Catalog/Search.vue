@@ -7,11 +7,19 @@ import ProductGrid from '@/Components/Store/ProductGrid.vue';
 const props = defineProps({
     query: { type: String, required: true },
     products: { type: Array, required: true },
+    gender: { type: String, default: null },
+    genders: { type: Array, required: true },
 });
 
 const term = ref(props.query);
 
-const submit = () => router.get(route('search'), { q: term.value }, { preserveState: true, replace: true });
+const search = (gender) => router.get(route('search'), { q: term.value, ...(gender && { gender }) }, { preserveState: true, replace: true });
+
+const submit = () => search(props.gender);
+
+const toggleGender = (gender) => search(props.gender === gender ? null : gender);
+
+const chip = 'min-h-11 border px-3 text-sm transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700';
 </script>
 
 <template>
@@ -33,6 +41,9 @@ const submit = () => router.get(route('search'), { q: term.value }, { preserveSt
             </form>
 
             <template v-if="query">
+                <div role="group" aria-label="Gender" class="mt-6 flex flex-wrap gap-2">
+                    <button v-for="option in genders" :key="option.value" type="button" :class="[chip, gender === option.value ? 'border-ink bg-ink text-brand-50' : 'border-brand-300']" :aria-pressed="gender === option.value" @click="toggleGender(option.value)">{{ option.label }}</button>
+                </div>
                 <p class="mt-6 text-sm text-brand-700" role="status">
                     {{ products.length }} {{ products.length === 1 ? 'result' : 'results' }} for “{{ query }}”
                 </p>

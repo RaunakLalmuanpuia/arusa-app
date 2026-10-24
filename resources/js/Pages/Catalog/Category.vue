@@ -10,10 +10,11 @@ const props = defineProps({
     products: { type: Array, required: true },
     sizes: { type: Array, required: true },
     colours: { type: Array, required: true },
+    genders: { type: Array, required: true },
     filters: { type: Object, required: true },
 });
 
-const query = reactive({ size: null, colour: null, min: null, max: null, ...props.filters });
+const query = reactive({ gender: null, size: null, colour: null, min: null, max: null, ...props.filters });
 
 const apply = () => {
     const params = Object.fromEntries(Object.entries(query).filter(([, value]) => value !== null && value !== ''));
@@ -26,7 +27,7 @@ const toggle = (key, value) => {
 };
 
 const clear = () => {
-    Object.assign(query, { size: null, colour: null, min: null, max: null });
+    Object.assign(query, { gender: null, size: null, colour: null, min: null, max: null });
     apply();
 };
 
@@ -53,7 +54,13 @@ const chip = 'min-h-11 border px-3 text-sm transition-colors duration-150 focus-
 
             <details class="mt-6 border-y border-brand-200 py-3 md:open:pb-6" :open="Object.values(filters).some((v) => v !== null)">
                 <summary class="flex min-h-11 cursor-pointer items-center text-xs font-medium uppercase tracking-[0.2em]">Filter</summary>
-                <div class="mt-3 grid gap-6 md:grid-cols-3">
+                <div class="mt-3 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                    <fieldset v-if="genders.length">
+                        <legend class="text-xs uppercase tracking-[0.2em] text-brand-600">Gender</legend>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button v-for="gender in genders" :key="gender.value" type="button" :class="[chip, query.gender === gender.value ? 'border-ink bg-ink text-brand-50' : 'border-brand-300']" :aria-pressed="query.gender === gender.value" @click="toggle('gender', gender.value)">{{ gender.label }}</button>
+                        </div>
+                    </fieldset>
                     <fieldset v-if="sizes.length">
                         <legend class="text-xs uppercase tracking-[0.2em] text-brand-600">Size</legend>
                         <div class="mt-2 flex flex-wrap gap-2">

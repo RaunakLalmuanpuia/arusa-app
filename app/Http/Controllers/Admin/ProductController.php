@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Gender;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Models\Category;
@@ -51,6 +52,7 @@ class ProductController extends Controller
     {
         return Inertia::render('Admin/Products/Create', [
             'categories' => $this->categoryOptions(),
+            'genders' => Gender::options(),
         ]);
     }
 
@@ -64,9 +66,10 @@ class ProductController extends Controller
     public function edit(Product $product): Response
     {
         return Inertia::render('Admin/Products/Edit', [
-            'product' => $product->only('id', 'name', 'slug', 'category_id', 'description', 'base_price', 'is_active'),
+            'product' => $product->only('id', 'name', 'slug', 'category_id', 'gender', 'description', 'base_price', 'is_active'),
             'variants' => $product->variants->map->only('id', 'size', 'colour', 'sku', 'price_override', 'stock', 'is_active'),
             'categories' => $this->categoryOptions(),
+            'genders' => Gender::options(),
             'images' => $product->images->map(fn (ProductImage $image): array => [
                 'id' => $image->id,
                 'url' => $image->url(400),

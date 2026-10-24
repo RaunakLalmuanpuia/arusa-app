@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Gender;
 use App\Models\Category;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -95,4 +96,13 @@ test('a product with orders cannot be deleted', function () {
         ->assertSessionHasErrors('product');
 
     expect($product->fresh())->not->toBeNull();
+});
+
+test('a product stores an optional gender and rejects unknown ones', function () {
+    $this->actingAs($this->admin)->post('/admin/products', productPayload(['gender' => 'women']));
+    $this->actingAs($this->admin)
+        ->post('/admin/products', productPayload(['slug' => 'other', 'gender' => 'kids']))
+        ->assertSessionHasErrors('gender');
+
+    expect(Product::sole()->gender)->toBe(Gender::Women);
 });
