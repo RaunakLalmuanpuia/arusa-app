@@ -148,7 +148,7 @@ onMounted(() => {
                 </div>
             </dl>
 
-            <div class="mt-6 text-sm">
+            <div v-if="timeline.length" class="mt-6 text-sm">
                 <h2 class="text-xs uppercase tracking-[0.2em] text-brand-600">Progress</h2>
                 <ol class="mt-3 space-y-3 border-l border-brand-300 pl-4">
                     <li v-for="(step, index) in timeline" :key="index" class="relative">
