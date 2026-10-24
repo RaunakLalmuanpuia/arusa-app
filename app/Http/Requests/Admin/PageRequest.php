@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\PageBlockType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -21,7 +22,9 @@ class PageRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:150'],
             'slug' => ['required', 'alpha_dash:ascii', 'max:100', Rule::unique('pages', 'slug')->ignore($this->route('page'))],
-            'body' => ['required', 'string', 'max:50000'],
+            'blocks' => ['required', 'list', 'max:30'],
+            'blocks.*.type' => ['required', Rule::enum(PageBlockType::class)],
+            'blocks.*.data' => ['required', 'array'],
         ];
     }
 }

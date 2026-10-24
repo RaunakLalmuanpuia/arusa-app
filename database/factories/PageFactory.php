@@ -20,7 +20,7 @@ class PageFactory extends Factory
         return [
             'slug' => fake()->unique()->slug(2),
             'title' => fake()->sentence(3),
-            'body' => fake()->paragraphs(2, true),
+            'blocks' => [['type' => 'text', 'data' => ['markdown' => fake()->paragraphs(2, true)]]],
         ];
     }
 }

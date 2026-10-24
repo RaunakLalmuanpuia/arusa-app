@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PageRequest;
 use App\Models\Page;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,7 +21,9 @@ class PageController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('Admin/Pages/Create');
+        return Inertia::render('Admin/Pages/Create', [
+            'imageBaseUrl' => Storage::disk('public')->url(''),
+        ]);
     }
 
     public function store(PageRequest $request): RedirectResponse
@@ -33,7 +36,8 @@ class PageController extends Controller
     public function edit(Page $page): Response
     {
         return Inertia::render('Admin/Pages/Edit', [
-            'page' => $page->only('id', 'slug', 'title', 'body'),
+            'page' => $page->only('id', 'slug', 'title', 'blocks'),
+            'imageBaseUrl' => Storage::disk('public')->url(''),
         ]);
     }
 
