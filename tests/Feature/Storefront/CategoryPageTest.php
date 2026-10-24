@@ -137,3 +137,11 @@ test('a colour filter shows that colour photo on the card', function () {
     $this->get('/categories/apparel')
         ->assertInertia(fn ($page) => $page->where('products.0.image.alt', 'white photo'));
 });
+
+test('a picked size or colour stays listed after switching to a gender that lacks it', function () {
+    productWith($this->apparel, ['size' => 'M', 'colour' => 'Grey'])->update(['gender' => Gender::Men]);
+    productWith($this->apparel, ['size' => 'S', 'colour' => 'Pink'])->update(['gender' => Gender::Women]);
+
+    $this->get('/categories/apparel?gender=women&size=M&colour=Grey')
+        ->assertInertia(fn ($page) => $page->where('sizes', ['S', 'M'])->where('colours', ['Pink', 'Grey'])->has('products', 0));
+});

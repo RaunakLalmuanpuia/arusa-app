@@ -51,8 +51,8 @@ class CategoryController extends Controller
             'category' => $category->only('name', 'slug'),
             'subcategories' => $subcategories->map->only('name', 'slug'),
             'products' => $products->map(fn (Product $product): array => $product->cardData()),
-            'sizes' => $this->variantValues($categoryIds, $gender, 'size'),
-            'colours' => $this->variantValues($categoryIds, $gender, 'colour'),
+            'sizes' => $this->variantValues($categoryIds, $gender, 'size', $filters['size'] ?? null),
+            'colours' => $this->variantValues($categoryIds, $gender, 'colour', $filters['colour'] ?? null),
             'genders' => Product::visible()->whereIn('category_id', $categoryIds)->whereNotNull('gender')->exists() ? Gender::shopperOptions() : [],
             'filters' => $filters,
         ]);
@@ -60,13 +60,14 @@ class CategoryController extends Controller
 
     /**
      * Distinct in-stock sizes or colours in these categories for the picked gender, in the order the admin created them.
+     * The picked value is always kept so its chip can still be tapped off after a gender switch.
      *
      * @param  Collection<int, int>  $categoryIds
      * @return Collection<int, string>
      */
-    private function variantValues(Collection $categoryIds, ?Gender $gender, string $column): Collection
+    private function variantValues(Collection $categoryIds, ?Gender $gender, string $column, ?string $picked): Collection
     {
-        return ProductVariant::query()
+        $values = ProductVariant::query()
             ->where('is_active', true)
             ->where('stock', '>', 0)
             ->whereNotNull($column)
@@ -75,5 +76,7 @@ class CategoryController extends Controller
             ->groupBy($column)
             ->orderByRaw('min(id)')
             ->pluck($column);
+
+        return $picked === null || $values->contains($picked) ? $values : $values->push($picked);
     }
 }
