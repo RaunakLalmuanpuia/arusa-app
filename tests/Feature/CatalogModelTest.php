@@ -2,6 +2,7 @@
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use Illuminate\Database\QueryException;
 
@@ -45,7 +46,26 @@ test('card data reports the price range, stock and first image', function () {
         'has_price_range' => true,
         'in_stock' => true,
         'image' => null,
+        'hover_image' => null,
     ]);
+});
+
+test('card data includes the second image of each product for the hover swap', function () {
+    [$first, $second] = Product::factory()->count(2)->has(ProductVariant::factory(), 'variants')->create();
+    foreach ([$first, $second] as $product) {
+        foreach ([1, 2, 3] as $order) {
+            ProductImage::factory()->for($product)->create(['alt' => "{$product->slug} {$order}", 'sort_order' => $order]);
+        }
+    }
+    $lonely = Product::factory()->has(ProductVariant::factory(), 'variants')->create();
+    ProductImage::factory()->for($lonely)->create();
+
+    $cards = Product::withCardData()->orderBy('id')->get()->map->cardData();
+
+    expect($cards[0]['image']['alt'])->toBe("{$first->slug} 1")
+        ->and($cards[0]['hover_image']['alt'])->toBe("{$first->slug} 2")
+        ->and($cards[1]['hover_image']['alt'])->toBe("{$second->slug} 2")
+        ->and($cards[2]['hover_image'])->toBeNull();
 });
 
 test('stock can never go negative', function () {
