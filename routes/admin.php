@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
@@ -14,7 +15,7 @@ Route::middleware(['auth', 'can:access-admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::inertia('/', 'Admin/Dashboard')->name('dashboard');
+        Route::get('/', DashboardController::class)->name('dashboard');
         Route::resource('orders', OrderController::class)->only(['index', 'show']);
         Route::put('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
         Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');

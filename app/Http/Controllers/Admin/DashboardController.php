@@ -1,0 +1,68 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Enums\FulfilmentStatus;
+use App\Enums\PaymentStatus;
+use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Models\ProductVariant;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class DashboardController extends Controller
+{
+    public function __invoke(): Response
+    {
+        // shortcut: loads all of today's orders to count and list them; fine at tens per day, paginate if that grows to hundreds.
+        $todayOrders = Order::whereDate('placed_at', today())->latest('placed_at')->latest('id')->get();
+
+        return Inertia::render('Admin/Dashboard', [
+            'today' => [
+                'count' => $todayOrders->count(),
+                'orders' => $todayOrders->map(fn (Order $order): array => [
+                    'id' => $order->id,
+                    'number' => $order->number,
+                    'customer' => $order->customer_name,
+                    'total' => $order->total,
+                    'status' => $order->fulfilment_status->label(),
+                ]),
+            ],
+            'needs_action' => [
+                ['label' => 'To pack', 'status' => FulfilmentStatus::Confirmed->value, 'count' => Order::where('fulfilment_status', FulfilmentStatus::Confirmed)->count()],
+                ['label' => 'To dispatch', 'status' => FulfilmentStatus::Packed->value, 'count' => Order::where('fulfilment_status', FulfilmentStatus::Packed)->count()],
+                ['label' => 'To deliver', 'status' => FulfilmentStatus::Dispatched->value, 'count' => Order::where('fulfilment_status', FulfilmentStatus::Dispatched)->count()],
+                ['label' => 'Refund owed', 'status' => 'refund_owed', 'count' => Order::refundOwed()->count()],
+            ],
+            'low_stock' => ProductVariant::with('product:id,name')
+                ->where('is_active', true)
+                ->where('stock', '<=', 3)
+                ->orderBy('stock')
+                ->orderBy('id')
+                ->limit(20)
+                ->get()
+                ->map(fn (ProductVariant $variant): array => [
+                    'id' => $variant->id,
+                    'product_id' => $variant->product_id,
+                    'name' => $variant->product->name,
+                    'variant' => collect([$variant->colour, $variant->size])->filter()->implode(' / '),
+                    'sku' => $variant->sku,
+                    'stock' => $variant->stock,
+                ]),
+            'revenue' => [
+                'last_7_days' => $this->revenueSince(6),
+                'last_30_days' => $this->revenueSince(29),
+            ],
+        ]);
+    }
+
+    /**
+     * Money received: paid orders placed from $days days before today up to now.
+     */
+    private function revenueSince(int $days): int
+    {
+        return (int) Order::where('payment_status', PaymentStatus::Paid)
+            ->where('placed_at', '>=', today()->subDays($days))
+            ->sum('total');
+    }
+}
